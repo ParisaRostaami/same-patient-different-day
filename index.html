@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Same Patient, Different Day: a counterfactual audit of the weekend effect in clinical language models. Parisa Rostami, Wichita State University.">
+<meta name="author" content="Parisa Rostami">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23111%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-size=%2216%22 text-anchor=%22middle%22 fill=%22%23ffc72c%22 font-family=%22Arial%22 font-weight=%22700%22%3ESD%3C/text%3E%3C/svg%3E">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Same Patient, Different Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a wall calendar of findings. Punched-hole header, tear-off day pages, one column of week "days" below.
+   Four user-chosen palettes (data-palette); each is a complete light-ground look, so the host's dark mode is not used. */
+:root, :root[data-palette="wsu"] {
+  --bg:#EFEBE3; --surface:#FFFFFF; --ink:#141414; --muted:#545454; --line:#D6D0C4; --grid:#E7E2D8;
+  --dark:#141414; --ondark:#FFFFFF; --ondark2:#C4C4C4; --accent:#FFC72C; --accent-ink:#141414; --accent2:#1F7A8C;
+  --hot:#FFC72C; --hottext:#141414; --mark:#FFE08A; --title:#FFC72C; --sun:#FFC72C;
+  --display:'Bricolage Grotesque','Arial Narrow',Arial,sans-serif; --body:'Instrument Sans','Helvetica Neue',Arial,sans-serif; --mono:'JetBrains Mono',Menlo,Consolas,monospace;
+  color-scheme: light;
+}
+:root[data-palette="night"] { --bg:#F7F3EA; --surface:#FFFFFF; --ink:#14213D; --muted:#4F5869; --line:#D9D3C7; --grid:#ECE6DA; --dark:#14213D; --ondark:#F7F3EA; --ondark2:#B9C0CF; --accent:#E76F51; --accent-ink:#14213D; --accent2:#2A9D8F; --hot:#E76F51; --hottext:#14213D; --mark:#F8C9A0; --title:#F4A261; --sun:#F4A261; }
+:root[data-palette="clinical"] { --bg:#EEF0EC; --surface:#FFFFFF; --ink:#22303C; --muted:#56626D; --line:#D3D8DC; --grid:#E6E8E6; --dark:#22303C; --ondark:#FAF8F4; --ondark2:#B8C2CB; --accent:#D1495B; --accent-ink:#FFFFFF; --accent2:#4F6D8A; --hot:#D1495B; --hottext:#FFFFFF; --mark:#C9DBCD; --title:#8FB39A; --sun:#8FB39A; }
+:root[data-palette="sunset"] { --bg:#F2E3C9; --surface:#FFF9F0; --ink:#3D1E3F; --muted:#665267; --line:#E3D3BE; --grid:#F0E4D2; --dark:#3D1E3F; --ondark:#FFF9F0; --ondark2:#D9C6D6; --accent:#FF7A5C; --accent-ink:#3D1E3F; --accent2:#4FA383; --hot:#FF7A5C; --hottext:#3D1E3F; --mark:#FFB199; --title:#FF7A5C; --sun:#7BC6A4; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation: none !important; } }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--dark); }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--accent2); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 80%; text-wrap: balance; margin: 0; letter-spacing: -0.005em; }
+p { margin: 0; text-wrap: pretty; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font-family: var(--mono); font-weight: 600; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--dark); color: var(--ondark); }
+.bar .wrap { display: flex; align-items: center; gap: 18px; padding-block: 10px; }
+.brand { font-family: var(--display); font-stretch: 78%; font-weight: 800; font-size: 21px; white-space: nowrap; text-decoration: none; }
+.brand span { color: var(--title); }
+.nav { display: flex; gap: 4px; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: none; }
+.nav a { font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; padding: 8px 10px; white-space: nowrap; color: var(--ondark2); border-radius: 2px; }
+.nav a:hover { color: var(--ondark); background: rgba(255,255,255,.08); }
+.themes { display: flex; gap: 6px; align-items: center; }
+.themes button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ondark2); cursor: pointer; padding: 0; position: relative; }
+.themes button[aria-pressed="true"] { border-color: var(--ondark); box-shadow: 0 0 0 2px var(--dark), 0 0 0 4px var(--ondark); }
+@media (max-width: 760px) {
+  .bar .wrap { flex-wrap: wrap; row-gap: 2px; }
+  .brand { flex: 1; min-width: 0; font-size: 18px; overflow: hidden; text-overflow: ellipsis; }
+  .nav { order: 3; flex-basis: 100%; }
+  .themes button { width: 22px; height: 22px; }
+}
+.sw-wsu { background: conic-gradient(#141414 0 50%, #FFC72C 0); }
+.sw-night { background: conic-gradient(#14213D 0 50%, #E76F51 0); }
+.sw-clinical { background: conic-gradient(#22303C 0 50%, #8FB39A 0); }
+.sw-sunset { background: conic-gradient(#3D1E3F 0 50%, #FF7A5C 0); }
+
+/* hero */
+.hero { background: var(--dark); color: var(--ondark); padding-block: 22px 48px; }
+.holes { display: flex; justify-content: space-between; padding: 0 12px 26px; }
+.holes i { width: 16px; height: 16px; border-radius: 50%; background: var(--bg); display: block; }
+.hero h1 { font-size: clamp(44px, 9vw, 112px); font-weight: 850; line-height: .92; }
+.hero h1 span { color: var(--title); }
+.hero .lede { font-size: clamp(19px, 2.4vw, 26px); line-height: 1.35; color: var(--ondark); max-width: 900px; margin-top: 18px; }
+.hero .who { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 6px 22px; color: var(--ondark2); font-size: 16px; }
+.hero .who b { color: var(--ondark); }
+.tag { display: inline-block; font-family: var(--mono); font-weight: 600; font-size: 12.5px; letter-spacing: .12em; background: var(--title); color: var(--dark); padding: 5px 10px; margin-bottom: 18px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 2px; margin-top: 34px; background: rgba(255,255,255,.14); }
+.stats div { background: var(--dark); padding: 14px 16px; }
+.stats b { display: block; font-family: var(--display); font-stretch: 80%; font-size: 40px; line-height: 1; color: var(--ondark); }
+.stats span { font-size: 14px; color: var(--ondark2); }
+
+/* section scaffolding */
+section.block { padding-block: 64px 8px; }
+.sec-head { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 22px; align-items: end; margin-bottom: 26px; }
+.daybox { grid-row: span 2; border: 3px solid var(--ink); background: var(--surface); text-align: center; align-self: start; }
+.daybox i { display: block; height: 14px; background: var(--ink); }
+.daybox span { display: block; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .14em; padding-top: 6px; color: var(--muted); }
+.daybox b { display: block; font-family: var(--display); font-stretch: 80%; font-weight: 850; font-size: 44px; line-height: 1; padding: 0 0 8px; }
+.sec-head h2 { font-size: clamp(30px, 4.4vw, 50px); line-height: 1.02; }
+.sec-head p { color: var(--muted); max-width: 760px; font-size: 18px; }
+@media (max-width: 560px) { .sec-head { grid-template-columns: 1fr; } .daybox { display: none; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); padding: 22px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 18px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 14px; }
+
+/* demo pages */
+.pages { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+.page { border: 2px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer; text-align: center; padding: 0; font: inherit; transition: transform .15s; }
+.page:hover { transform: translateY(-3px); }
+.page i { display: flex; justify-content: space-around; align-items: center; height: 18px; background: var(--ink); }
+.page i::before, .page i::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--bg); }
+.page small { display: block; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .1em; padding-top: 8px; color: var(--muted); }
+.page b { display: block; font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: clamp(22px, 4vw, 44px); line-height: 1.05; padding: 4px 0 10px; }
+.page.we { background: var(--hot); color: var(--hottext); }
+.page.we small { color: var(--hottext); }
+.page.none { border-style: dashed; color: var(--muted); }
+.page[aria-pressed="true"] { outline: 4px solid var(--accent2); outline-offset: 2px; }
+.brk { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; margin-bottom: 6px; }
+.brk div { grid-column: 6 / span 2; text-align: center; font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: .08em; border-bottom: 6px solid var(--hot); padding-bottom: 4px; }
+@media (max-width: 640px) { .pages, .brk { grid-template-columns: repeat(4, minmax(0, 1fr)); } .brk { display: none; } }
+.casebox { margin-top: 18px; background: var(--surface); border-left: 0; border: 1px solid var(--line); padding: 18px 20px; font-size: 16.5px; }
+.casebox mark { background: var(--mark); color: var(--ink); padding: 0 4px; font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; margin-bottom: 16px; }
+.controls label { display: flex; flex-direction: column; gap: 4px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+select, .btn { font: 15px var(--body); color: var(--ink); background: var(--surface); border: 2px solid var(--ink); padding: 7px 10px; min-height: 40px; border-radius: 0; }
+.btn { cursor: pointer; font-weight: 600; }
+.btn.primary { background: var(--ink); color: var(--surface); }
+.seg { display: inline-flex; border: 2px solid var(--ink); }
+.seg button { font: 600 14px var(--body); padding: 7px 12px; min-height: 36px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+
+/* explorer */
+.io { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); gap: 18px; }
+.msg { border: 1px solid var(--line); background: var(--bg); padding: 12px 14px; margin-top: 10px; font-size: 15px; white-space: pre-wrap; }
+.msg .role { display: block; font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.msg mark { background: var(--mark); color: var(--ink); font-weight: 600; padding: 0 3px; }
+.reply { font-family: var(--mono); font-size: 18px; background: var(--dark); color: var(--ondark); padding: 16px; margin-top: 10px; white-space: pre-wrap; overflow-x: auto; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { font: 600 13px var(--mono); letter-spacing: .06em; padding: 7px 10px; border: 2px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer; }
+.tabs button.we { background: var(--hot); color: var(--hottext); }
+.tabs button[aria-pressed="true"] { outline: 3px solid var(--accent2); outline-offset: 2px; }
+.matrix { overflow-x: auto; margin-top: 8px; }
+.matrix table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+.matrix th, .matrix td { padding: 6px 6px; text-align: center; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+.matrix th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.matrix td:first-child, .matrix th:first-child { text-align: left; white-space: nowrap; }
+.matrix tr.flip td:first-child::after { content: " · changes"; color: var(--accent2); font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.pill { display: inline-block; font: 600 12px var(--mono); letter-spacing: .06em; padding: 3px 8px; border: 1.5px solid var(--ink); }
+
+/* findings + facts */
+.finding { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 12px; background: var(--surface); border-top: 5px solid var(--ink); padding: 18px 18px 20px; }
+.finding .n { font-family: var(--display); font-stretch: 80%; font-weight: 850; font-size: 40px; line-height: .9; }
+.finding h3 { font-size: 22px; line-height: 1.12; margin-bottom: 6px; }
+.finding p { font-size: 15.5px; color: var(--muted); }
+.fact { background: var(--sun); color: var(--ink); padding: 18px; }
+.fact b { display: block; font-family: var(--display); font-stretch: 80%; font-weight: 850; font-size: 38px; line-height: 1; margin-bottom: 6px; }
+.fact p { font-size: 15.5px; }
+
+/* charts */
+figure { margin: 0; }
+.fig { background: var(--surface); border: 1px solid var(--line); padding: 22px; margin-bottom: 18px; }
+.fig h3 { font-size: clamp(22px, 2.8vw, 30px); line-height: 1.1; margin-bottom: 6px; }
+.fig .sub { color: var(--muted); margin-bottom: 14px; max-width: 820px; }
+.fig svg { width: 100%; height: auto; display: block; overflow: visible; }
+.fig .read { margin-top: 12px; font-size: 15px; color: var(--muted); border-top: 1px solid var(--grid); padding-top: 10px; }
+.fig .read b { color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: 600 13px var(--body); padding: 5px 10px; border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer; min-height: 34px; }
+.chips button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+svg text { font-family: var(--body); }
+.tt { position: fixed; z-index: 50; pointer-events: none; background: var(--dark); color: var(--ondark); padding: 10px 12px; font-size: 13.5px; line-height: 1.4; max-width: 280px; opacity: 0; transition: opacity .1s; }
+.tt b { color: var(--title); }
+
+/* tables */
+.tablewrap { overflow-x: auto; }
+table.data { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 760px; background: var(--surface); }
+table.data th, table.data td { border-bottom: 1px solid var(--grid); padding: 9px 10px; text-align: left; vertical-align: top; }
+table.data th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 2px solid var(--ink); }
+table.data td.r, table.data th.r { text-align: right; font-variant-numeric: tabular-nums; }
+details { background: var(--surface); border: 1px solid var(--line); padding: 14px 18px; }
+details + details { margin-top: 8px; }
+summary { cursor: pointer; font-weight: 600; font-size: 17px; }
+details p { margin-top: 8px; color: var(--muted); }
+
+/* weekend sections */
+.weekend { background: var(--dark); color: var(--ondark); margin-top: 64px; padding-block: 56px; }
+.weekend .sec-head p { color: var(--ondark2); }
+.weekend .daybox { border-color: var(--title); background: var(--dark); }
+.weekend .daybox i { background: var(--title); }
+.weekend .daybox span, .weekend .daybox b { color: var(--title); }
+.weekend .fig { border-color: transparent; }
+.privacy { border: 2px dashed var(--ondark2); padding: 18px 20px; color: var(--ondark); }
+.privacy b { color: var(--title); }
+.sunday { background: var(--sun); color: var(--ink); padding-block: 56px; }
+.sunday .daybox { border-color: var(--ink); background: var(--sun); }
+.sunday .sec-head p { color: var(--ink); }
+.takeaway { display: grid; grid-template-columns: 54px minmax(0,1fr); gap: 14px; }
+.takeaway b.l { font-family: var(--display); font-weight: 850; font-size: 56px; line-height: .9; }
+.takeaway h3 { font-size: 26px; line-height: 1.1; }
+.contact { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 10px; }
+.contact a, .contact .mail { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 2px solid var(--ink); padding: 14px 16px; text-decoration: none; min-width: 0; }
+.contact span { font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.contact b { font-size: 16.5px; overflow-wrap: anywhere; }
+.mail .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.mail button { font: 600 13px var(--body); border: 1.5px solid var(--ink); background: var(--bg); color: var(--ink); padding: 6px 10px; cursor: pointer; }
+footer { padding-block: 26px 40px; color: var(--muted); font-size: 14px; }
+.loading { padding: 40px 0; color: var(--muted); }
+
+/* motion and calendar pieces */
+.hero { position: relative; overflow: hidden; }
+.hero .wrap { position: relative; z-index: 1; }
+.drift { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.drift span { position: absolute; left: 0; font-family: var(--display); font-weight: 800; font-size: clamp(120px, 20vw, 300px); line-height: 1; color: transparent; -webkit-text-stroke: 1.5px var(--ondark); opacity: .09; white-space: nowrap; animation: drift 80s linear infinite; }
+.drift span:nth-child(1) { top: 2%; }
+.drift span:nth-child(2) { top: 36%; animation-duration: 100s; animation-direction: reverse; }
+.drift span:nth-child(3) { top: 70%; animation-duration: 120s; }
+@keyframes drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.flipbox { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 28px; font-size: clamp(17px, 2.1vw, 22px); color: var(--ondark2); }
+.flap { display: inline-block; perspective: 500px; }
+.flap span { display: inline-block; min-width: 5.4em; text-align: center; background: var(--ondark); color: var(--dark); font-family: var(--display); font-weight: 800; font-size: clamp(26px, 3.6vw, 44px); line-height: 1.15; padding: 2px 14px; transform-origin: 50% 50%; }
+#flapRisk span { min-width: 3.2em; font-variant-numeric: tabular-nums; }
+.flap.we span { background: var(--hot); color: var(--hottext); }
+.flap.flip span { animation: flap .32s ease-in-out; }
+@keyframes flap { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+.fl-cap { margin-top: 10px; font-size: 14.5px; color: var(--ondark2); }
+.ticker { background: var(--hot); color: var(--hottext); overflow: hidden; white-space: nowrap; border-block: 3px solid var(--ink); }
+.tk-track { display: inline-flex; animation: tick 50s linear infinite; }
+.tk-track span { font-family: var(--mono); font-weight: 600; font-size: 13px; letter-spacing: .24em; padding: 9px 22px; }
+.tk-track span.we { background: var(--dark); color: var(--title); }
+@keyframes tick { to { transform: translateX(-50%); } }
+.bar .rail.wrap { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; padding-block: 0 8px; }
+section[id], #top { scroll-margin-top: 104px; }
+.nav a { padding: 8px 8px; letter-spacing: .05em; }
+@media (min-width: 900px) { .contact { grid-template-columns: repeat(3, minmax(0, 1fr)); } .contact .mail { grid-column: span 2; } }
+.rail a { height: 22px; display: flex; align-items: center; justify-content: center; font: 600 10.5px var(--mono); letter-spacing: .16em; color: var(--ondark2); text-decoration: none; background: rgba(255,255,255,.07); transition: background .35s, color .35s; }
+.rail a.past { background: rgba(255,255,255,.2); color: var(--ondark); }
+.rail a.on { background: var(--title); color: var(--dark); }
+@media (max-width: 760px) { .bar .rail.wrap { display: none; } }
+.pages.anim .page { animation: pagein .55s cubic-bezier(.2,.9,.3,1.2) both; animation-delay: var(--d, 0s); transform-origin: 50% 0; }
+@keyframes pagein { from { transform: perspective(600px) rotateX(-95deg); opacity: 0; } to { transform: perspective(600px) rotateX(0); opacity: 1; } }
+.daybox { transform-origin: 50% 0; }
+.daybox.tear { animation: tear .9s ease-in-out; }
+@keyframes tear { 0% { transform: rotateX(0); } 35% { transform: perspective(300px) rotateX(-40deg); } 70% { transform: perspective(300px) rotateX(12deg); } 100% { transform: rotateX(0); } }
+svg .a-dot, svg .a-sq { transform-box: fill-box; transform-origin: center; animation: pop .55s cubic-bezier(.2,1.5,.4,1) both; animation-delay: var(--d, 0ms); }
+svg .a-bar { transform-box: fill-box; transform-origin: left center; animation: growx .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+svg .a-barr { transform-box: fill-box; transform-origin: right center; animation: growx .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+svg .a-barv { transform-box: fill-box; transform-origin: center bottom; animation: growy .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+svg .a-cell { animation: fadein .5s ease both; animation-delay: var(--d, 0ms); }
+svg .a-line { animation: draw 1.2s ease-out; }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes growx { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes growy { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes draw { from { stroke-dasharray: var(--len) var(--len); stroke-dashoffset: var(--len); } to { stroke-dasharray: var(--len) var(--len); stroke-dashoffset: 0; } }
+.finding, .fact { transition: transform .25s, box-shadow .25s; }
+.finding:hover, .fact:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 var(--ink); }
+.contact a, .contact .mail { flex-direction: row; align-items: center; gap: 14px; transition: transform .2s, box-shadow .2s; }
+.contact > a:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 var(--ink); }
+.contact a.plain { border: 0; padding: 0; background: none; display: inline; font-size: 14px; text-decoration: underline; }
+.ico { width: 34px; height: 34px; flex-shrink: 0; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.c-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.c-acts { display: flex; gap: 10px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+
+<div class="tt" id="tt" role="tooltip"></div>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top">Same Patient, <span>Different Day</span></a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#try">Try it</a><a href="#explore">Explorer</a><a href="#findings">Findings</a><a href="#charts">Charts</a>
+      <a href="#real">Real hospitals</a><a href="#stats">Statistics</a><a href="#models">Models</a><a href="#about">Contact</a>
+    </nav>
+    <div class="themes" role="group" aria-label="Color theme">
+      <button class="sw-wsu" data-p="wsu" title="WSU" aria-label="WSU theme"></button>
+      <button class="sw-night" data-p="night" title="Night shift" aria-label="Night shift theme"></button>
+      <button class="sw-clinical" data-p="clinical" title="Clinical calm" aria-label="Clinical calm theme"></button>
+      <button class="sw-sunset" data-p="sunset" title="Sunset ward" aria-label="Sunset ward theme"></button>
+    </div>
+  </div>
+  <nav class="rail wrap" aria-label="Week">
+    <a href="#try">MON</a><a href="#how">TUE</a><a href="#explore">WED</a><a href="#findings">THU</a><a href="#charts">FRI</a><a href="#real">SAT</a><a href="#about">SUN</a>
+  </nav>
+</header>
+
+<section class="hero" id="top">
+  <div class="drift" aria-hidden="true"><span>SATURDAY SUNDAY SATURDAY SUNDAY</span><span>MONDAY TUESDAY WEDNESDAY MONDAY TUESDAY WEDNESDAY</span><span>THURSDAY FRIDAY SATURDAY THURSDAY FRIDAY SATURDAY</span></div>
+  <div class="wrap">
+    <div class="holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="tag">POSTER · ROCKY MOUNTAIN WORKSHOP ON TRUSTWORTHY &amp; RESPONSIBLE AI · CU BOULDER · NOV 4, 2026</div>
+    <h1>Same Patient, <span>Different Day.</span></h1>
+    <p class="lede">We gave 11 language models the same emergency patients again and again, changing only the day of admission. If a model raises the risk of death because it is Saturday, it is applying the hospital "weekend effect" to someone it already knows everything about.</p>
+    <div class="flipbox" id="flipbox"><span>Admitted on a</span><span class="flap" id="flapDay"><span>Sunday</span></span><span>morning: predicted risk of death</span><span class="flap" id="flapRisk"><span>80%</span></span></div>
+    <p class="fl-cap">The same 71-year-old woman with a pulmonary embolism, asked to Llama-3-8B. Only the day changes.</p>
+    <div class="who"><b>Parisa Rostami</b><span>Computer Science, Wichita State University</span><a href="#about">Contact and links</a></div>
+    <div class="stats" id="heroStats"></div>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true"><div class="tk-track" id="tkTrack"></div></div>
+<main>
+<section class="block" id="try">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>MON</span><b>2</b></div><h2>One patient, eight versions</h2><p>Every version below is word-for-word the same case, except one sentence that names the day. Tap a page to read the exact text the model saw.</p></div>
+    <div class="controls">
+      <label for="demoModel">Model<select id="demoModel"></select></label>
+      <button class="btn primary" id="demoFlip" type="button">Show me another patient that flips</button>
+      <span class="pill" id="demoShift"></span>
+    </div>
+    <div class="brk" aria-hidden="true"><div id="demoBrk">WEEKEND</div></div>
+    <div class="pages" id="demoPages"></div>
+    <div class="casebox" id="demoCase"></div>
+    <p style="margin-top:12px;color:var(--muted);font-size:15px" id="demoNote"></p>
+  </div>
+</section>
+
+<section class="block" id="how">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>TUE</span><b>3</b></div><h2>How the test works</h2><p>A counterfactual audit: each patient is their own control, so any difference can only come from the day word.</p></div>
+    <div class="grid4" id="howSteps"></div>
+    <div class="grid2" style="margin-top:18px">
+      <div class="card"><div class="eyebrow">The exact prompt</div><div id="promptText"></div></div>
+      <div class="card"><div class="eyebrow">What we measure</div>
+        <p style="margin-top:10px"><b>Weekend shift</b> for one patient = average predicted risk on Saturday and Sunday − average on Monday to Friday. Zero is fair. A positive shift means the model raises that patient's risk at weekends.</p>
+        <p style="margin-top:10px">We test whether shifts differ from zero across patients (Wilcoxon signed-rank test, Holm-corrected for 11 models), check a placebo that should be zero (Tuesday vs Wednesday), and ask whether the weekend is special or every pair of days moves this much (rank among all 21 pairs of days).</p>
+        <p style="margin-top:10px">Decoding is greedy and the answer format is forced, so the same input always gives the same output. 123,200 answers, none unusable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="explore">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>WED</span><b>4</b></div><h2>Case explorer: every synthetic patient, every answer</h2><p>All 300 synthetic patients and all 52,800 of their answers are here. Pick a patient and a model, switch the day, and see the full input and the model's raw reply.</p></div>
+    <div class="controls">
+      <label for="exCond">Condition<select id="exCond"></select></label>
+      <label for="exSev">Severity<select id="exSev"><option value="mild">Mild</option><option value="moderate">Moderate</option><option value="severe">Severe</option></select></label>
+      <label for="exNum">Patient<select id="exNum"></select></label>
+      <label for="exModel">Model<select id="exModel"></select></label>
+      <label>Prompt<span class="seg" id="exPrompt"><button type="button" data-v="base" aria-pressed="true">Usual</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></label>
+      <button class="btn" id="exNext" type="button">Next patient this model changes</button>
+    </div>
+    <div class="tabs" id="exTabs" role="group" aria-label="Admission day"></div>
+    <div class="io" style="margin-top:14px">
+      <div class="card"><div class="eyebrow">Input: what the model saw</div><div id="exInput"></div></div>
+      <div class="card"><div class="eyebrow">Output: its raw reply</div><div class="reply" id="exReply"></div>
+        <div class="eyebrow" style="margin-top:18px">This patient across the week</div><div id="exStrip"></div>
+        <p id="exSummary" style="margin-top:10px;font-size:15.5px"></p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:18px"><div class="eyebrow">All 11 models, this patient (predicted risk %, ICU yes in bold)</div><div class="matrix" id="exMatrix"></div></div>
+  </div>
+</section>
+
+<section class="block" id="findings">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>THU</span><b>5</b></div><h2>What we found</h2><p>Twelve findings from the cluster run (Oct 31, 2026). Large models (70B) are still running and will be added.</p></div>
+    <div class="grid3" id="findingList"></div>
+    <h3 style="font-size:30px;margin:44px 0 14px">Things that surprised us</h3>
+    <div class="grid4" id="factList"></div>
+  </div>
+</section>
+
+<section class="block" id="charts">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>FRI</span><b>6</b></div><h2>The results, chart by chart</h2><p>Every chart is interactive: hover or tap a mark for its numbers, and use the buttons to switch between real and synthetic patients or between the two prompts.</p></div>
+
+    <figure class="fig" id="f-forest">
+      <h3>7 of 11 models move the same real patient at weekends</h3>
+      <p class="sub">Average weekend shift per model with its 95% confidence interval. Filled = significant after correcting for 11 tests; hollow = not.</p>
+      <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="both" aria-pressed="true">Both</button><button type="button" data-v="mimic" aria-pressed="false">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span>
+      <span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+      <div class="plot"></div>
+      <p class="read"><b>How to read it.</b> A dot right of zero means the model gives the same patient a higher risk on Saturday and Sunday. Real patients: 5 models go up, 2 go down. The shifts are small on average, but the next charts show why averages hide the story.</p>
+    </figure>
+
+    <figure class="fig" id="f-flips">
+      <h3>Most answers never change, but some jump 10 points or more</h3>
+      <p class="sub">Share of patients whose predicted risk changes when only the day changes. Dark = the swing is 10 points or more.</p>
+      <div class="controls"><span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+      <div class="plot"></div>
+      <p class="read"><b>How to read it.</b> Bars are synthetic patients (we can count every swing); the dot is the share of real patients whose answer changes at all. "max" is the biggest swing for one patient. BioMistral moved one patient by 90 points.</p>
+    </figure>
+
+    <figure class="fig" id="f-profile">
+      <h3>Day by day: which models peak at the weekend?</h3>
+      <p class="sub">Average predicted risk on each day, relative to the same model's Monday-to-Friday average. Pick up to four models.</p>
+      <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="mimic" aria-pressed="true">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span>
+      <span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+      <div class="chips" data-ctl="models"></div>
+      <div class="plot" style="margin-top:12px"></div>
+      <p class="read"><b>How to read it.</b> On real patients Qwen2.5-32B is flat all week and climbs on Sunday; Qwen2.5-7B drops on both weekend days; Qwen2.5-0.5B climbs through the whole week. "No day" is the version that names no day at all.</p>
+    </figure>
+
+    <figure class="fig" id="f-pairs">
+      <h3>Is it really the weekend, or do all days wobble?</h3>
+      <p class="sub">For one model, every one of the 21 possible pairs of days, compared with the other five days (synthetic patients). The weekend pair is the big dot.</p>
+      <div class="controls"><label for="pairModel">Model<select id="pairModel"></select></label><span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+      <div class="plot"></div>
+      <p class="read" id="pairRead"></p>
+    </figure>
+
+    <figure class="fig" id="f-heat">
+      <h3>Which conditions move most?</h3>
+      <p class="sub">Average weekend shift for each model and condition (synthetic patients, 30 per condition).</p>
+      <div class="controls"><span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+      <div class="plot tablewrap"></div>
+      <p class="read"><b>How to read it.</b> Warm cells raise weekend risk, cool cells lower it. Averaged over models, hip fracture (+0.59) and NSTEMI (+0.57) move most. The tiny Qwen2.5-0.5B adds +7.7 points for pneumonia; BioMistral takes 5.2 away.</p>
+    </figure>
+
+    <div class="grid2">
+      <figure class="fig" id="f-scale">
+        <h3>Bigger is better at medicine, not at ignoring the day</h3>
+        <p class="sub">Qwen2.5 from 0.5B to 32B parameters. Numbers on top: how well each ranks real deaths (AUROC).</p>
+        <div class="controls"><span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+        <div class="plot"></div>
+        <p class="read"><b>How to read it.</b> AUROC climbs from 0.67 to 0.92, but the weekend shift never reaches zero. The 32B model still adds +0.64 points on real patients.</p>
+      </figure>
+      <figure class="fig" id="f-fix">
+        <h3>Telling the model to ignore the day barely helps</h3>
+        <p class="sub">Each arrow goes from the usual prompt to the prompt with the fairness sentence.</p>
+        <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="mimic" aria-pressed="true">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span></div>
+        <div class="plot"></div>
+        <p class="read"><b>How to read it.</b> On real patients the shift disappears for Qwen2.5-1.5B and 3B, but 4 models stay shifted, including the two largest. On synthetic patients no working model improves significantly.</p>
+      </figure>
+    </div>
+
+    <div class="grid2">
+      <figure class="fig" id="f-noday">
+        <h3>Just naming a day changes the risk</h3>
+        <p class="sub">Average of the seven named days minus the version that names no day.</p>
+        <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="mimic" aria-pressed="true">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span>
+        <span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual</button><button type="button" data-v="fair" aria-pressed="false">Fair</button></span></div>
+        <div class="plot"></div>
+        <p class="read"><b>How to read it.</b> For several models, mentioning any day at all moves risk more than the choice of day does. Med42 adds about 2 points on synthetic patients; Qwen2.5-0.5B drops almost 5 on real ones.</p>
+      </figure>
+      <figure class="fig" id="f-calib">
+        <h3>How good are the models at the clinical part?</h3>
+        <p class="sub">400 real patients, 100 of whom died. Bars: AUROC (0.5 = coin flip). Dots: average predicted risk against the real 25%.</p>
+        <div class="plot"></div>
+        <p class="read"><b>How to read it.</b> Qwen2.5-14B and 32B rank deaths best and are close to the real 25%. Qwen2.5-1.5B says 73% on average. OpenBioLLM answers about 50% for almost everyone.</p>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="weekend" id="real">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>SAT</span><b>7</b></div><h2>In real hospitals, the gap is who comes in</h2><p>Do weekend and night patients really die more often? We checked three real databases. Only counts and rates were computed, inside the university cluster.</p></div>
+    <div class="grid2">
+      <figure class="fig" id="f-dow">
+        <h3>MIMIC-IV hides the real weekday</h3>
+        <p class="sub">Planned (elective) admissions almost never happen on a real weekend. Share of them by day:</p>
+        <div class="plot"></div>
+        <p class="read"><b>How to read it.</b> MIMIC-III: only 3.3% on Saturday and Sunday, so the weekday is real. MIMIC-IV: 28.9%, exactly what random days give (28.6%), because its dates were shifted for privacy. Clock times in MIMIC-IV are still real.</p>
+      </figure>
+      <figure class="fig" id="f-or">
+        <h3>The raw gap shrinks once you know how sick patients are</h3>
+        <p class="sub">Odds of dying in hospital, exposed vs not. Toggle to see what adjusting for the patient does.</p>
+        <div class="controls"><span class="seg" data-ctl="adj"><button type="button" data-v="raw" aria-pressed="false">Age and sex only</button><button type="button" data-v="adj" aria-pressed="true">+ who the patient is</button></span></div>
+        <div class="plot"></div>
+        <p class="read"><b>How to read it.</b> eICU (208 US hospitals): night patients die more (9.5% vs 7.6%), but they are also sicker (APACHE risk 12.6% vs 10.2%). After adjusting, the odds ratio goes from 1.31 to 0.96.</p>
+      </figure>
+    </div>
+    <div class="privacy" style="margin-top:6px">
+      <p><b>Why there are no real patient cases on this page.</b> The 400 real cases come from MIMIC-IV. They are de-identified, but the PhysioNet data use agreement forbids sharing any record, even one, and we never sent them to an online AI service. All real-patient results here are totals over many patients. Each real case was written from the patient's age, sex, arrival vital signs, first lab results and diagnoses, in the same format as the synthetic cases you can browse above.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="stats">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>NOTES</span><b>+</b></div><h2>Every statistical test, in plain words</h2><p>Eleven tests per model, run on the synthetic patients; the real-patient column shows what we have so far.</p></div>
+    <div class="tablewrap"><table class="data" id="testTable"></table></div>
+    <h3 style="font-size:26px;margin:34px 0 12px">Per-model detail</h3>
+    <div class="controls"><span class="seg" id="detailPrompt"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+    <div class="tablewrap"><table class="data" id="detailTable"></table></div>
+    <h3 style="font-size:26px;margin:34px 0 12px">Words used on this page</h3>
+    <div id="glossary"></div>
+  </div>
+</section>
+
+<section class="block" id="models">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>NOTES</span><b>+</b></div><h2>The 11 models</h2><p>Open models run on one A30 GPU with vLLM. Medical fine-tunes are listed with the general model they were trained from.</p></div>
+    <div class="tablewrap"><table class="data" id="modelTable"></table></div>
+  </div>
+</section>
+
+<section class="sunday" id="about">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>SUN</span><b>8</b></div><h2>What it means, and what comes next</h2><p>Three takeaways for anyone deploying a language model near patients.</p></div>
+    <div class="grid3">
+      <div class="takeaway"><b class="l">A</b><div><h3>Small on average, big for some patients.</h3><p>Audit per-patient flips, not only average shifts.</p></div></div>
+      <div class="takeaway"><b class="l">B</b><div><h3>A property of each model.</h3><p>Same family, same size, opposite directions. Test every model before clinical use.</p></div></div>
+      <div class="takeaway"><b class="l">C</b><div><h3>The right answer is zero.</h3><p>Once severity is known the real gap mostly disappears, so shifting a fully described patient counts the same thing twice.</p></div></div>
+    </div>
+    <div class="grid2" style="margin-top:34px">
+      <div class="card"><div class="eyebrow">Limits</div>
+        <ul style="margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:15.5px">
+          <li>Short case vignettes, one wording of the day and one answer format.</li>
+          <li>Greedy decoding (one answer per prompt). Qwen2.5-14B and 32B ran in 4-bit.</li>
+          <li>Absolute risks are poorly calibrated, so only shifts within the same patient are interpreted.</li>
+          <li>Real-world effects are observational; APACHE uses the first 24 hours in the ICU and may absorb some early differences in care.</li>
+        </ul></div>
+      <div class="card"><div class="eyebrow">Coming next</div>
+        <ul style="margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:15.5px">
+          <li>70B-class models (Qwen2.5-72B, Llama-3.3-70B): queued; this page will be updated.</li>
+          <li>TwinDay benchmark: clock time, holidays, the July effect, bare dates, staffing, race × day.</li>
+          <li>Reasoning models, and where the shift lives inside the model.</li>
+          <li>Other prompt wordings, and a fine-tuning fix that teaches models to ignore the day.</li>
+        </ul></div>
+    </div>
+    <h3 style="font-size:30px;margin:44px 0 14px">Contact</h3>
+    <div class="contact">
+      <div class="mail"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg><div class="c-txt"><span>Email</span><b id="mailText">Parisa.rostaamii@gmail.com</b><div class="c-acts"><button type="button" id="copyMail">Copy</button><a class="plain" href="mailto:Parisa.rostaamii@gmail.com">Open in mail app</a></div></div></div>
+      <a href="https://www.linkedin.com/in/parisa-rostami/" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7.5" width="18" height="12.5" rx="1.5"/><path d="M8.5 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h4a1.5 1.5 0 0 1 1.5 1.5v2M3 12.5h18M11 12.5v1.5h2v-1.5"/></svg><div class="c-txt"><span>LinkedIn</span><b>linkedin.com/in/parisa-rostami</b></div></a>
+      <a href="https://github.com/ParisaRostaami" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6.5L2.5 12 8 17.5M16 6.5l5.5 5.5-5.5 5.5M13.5 4.5l-3 15"/></svg><div class="c-txt"><span>GitHub</span><b>github.com/ParisaRostaami</b></div></a>
+      <a href="https://parisarostaami.github.io" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9M12 3C9.4 5.6 8.2 8.6 8.2 12s1.2 6.4 3.8 9"/></svg><div class="c-txt"><span>Portfolio</span><b>parisarostaami.github.io</b></div></a>
+      <a href="https://scholar.google.com/citations?user=zd3H3-YAAAAJ" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9.5L12 4.5l10 5-10 5z"/><path d="M6 11.5v4.5c3.5 2.5 8.5 2.5 12 0v-4.5M22 9.5v5"/></svg><div class="c-txt"><span>Google Scholar</span><b>Parisa Rostami</b></div></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Parisa Rostami · M.S. Computer Science, Wichita State University · Advisor: Cody Farlow · Results as of <span id="updated">Oct 31, 2026</span>. MIMIC-III, MIMIC-IV and eICU-CRD were used under PhysioNet credentialed access; no patient-level data is shown or leaves the WSU cluster. References: Bell &amp; Redelmeier, N Engl J Med 2001; Pauls et al., J Hosp Med 2017; Walker et al., Lancet 2017; Meacock et al., J Health Serv Res Policy 2017; Johnson et al., Sci Data 2016 and 2023; Pollard et al., Sci Data 2018.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  // ---------- theme
+  const root = document.documentElement;
+  function setPalette(p) {
+    root.setAttribute("data-palette", p);
+    document.querySelectorAll(".themes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === p ? "true" : "false"));
+    try { localStorage.setItem("spdd-palette", p); } catch (e) { /* storage unavailable */ }
+  }
+  let saved = "wsu";
+  try { saved = localStorage.getItem("spdd-palette") || "wsu"; } catch (e) { saved = "wsu"; }
+  setPalette(["wsu", "night", "clinical", "sunset"].includes(saved) ? saved : "wsu");
+  document.querySelectorAll(".themes button").forEach(b => b.addEventListener("click", () => setPalette(b.dataset.p)));
+
+  // ---------- helpers
+  const $ = s => document.querySelector(s);
+  const NS = "http://www.w3.org/2000/svg";
+  function S(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in (attrs || {})) { if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]); }
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function T(parent, x, y, txt, attrs) { const t = S("text", Object.assign({ x, y, fill: "var(--muted)", "font-size": 13.5 }, attrs || {}), parent); t.textContent = txt; return t; }
+  function H(tag, attrs, html) { const e = document.createElement(tag); for (const k in (attrs || {})) e.setAttribute(k, attrs[k]); if (html !== undefined) e.innerHTML = html; return e; }
+  const sgn = (x, d) => (x > 0 ? "+" : x < 0 ? "−" : "") + Math.abs(x).toFixed(d === undefined ? 2 : d);
+  const pct = (x, d) => (100 * x).toFixed(d === undefined ? 1 : d) + "%";
+  const pfmt = p => p === null || p === undefined ? "–" : p < 0.001 ? "< 0.001" : p.toFixed(3);
+  const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "No day"];
+  const tt = $("#tt");
+  function tip(el, html) {
+    const show = ev => { tt.innerHTML = html(); tt.style.opacity = 1; move(ev); };
+    const move = ev => {
+      const r = ev && ev.clientX !== undefined ? { x: ev.clientX, y: ev.clientY } : (() => { const b = el.getBoundingClientRect(); return { x: b.right, y: b.top }; })();
+      const w = tt.offsetWidth, h = tt.offsetHeight;
+      let x = r.x + 14, y = r.y + 14;
+      if (x + w > window.innerWidth - 8) x = r.x - w - 14;
+      if (y + h > window.innerHeight - 8) y = r.y - h - 14;
+      tt.style.left = Math.max(8, x) + "px"; tt.style.top = Math.max(8, y) + "px";
+    };
+    const hide = () => { tt.style.opacity = 0; };
+    el.addEventListener("mouseenter", show); el.addEventListener("mousemove", move); el.addEventListener("mouseleave", hide);
+    el.addEventListener("focus", show); el.addEventListener("blur", hide);
+    el.addEventListener("click", show);
+    el.setAttribute("tabindex", "0");
+  }
+  function seg(container, onChange) {
+    const btns = container.querySelectorAll("button");
+    btns.forEach(b => b.addEventListener("click", () => {
+      btns.forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+      onChange(b.dataset.v);
+    }));
+    const cur = [...btns].find(b => b.getAttribute("aria-pressed") === "true");
+    return cur ? cur.dataset.v : btns[0].dataset.v;
+  }
+  const scale = (d0, d1, r0, r1) => v => r0 + (v - d0) / (d1 - d0) * (r1 - r0);
+  const RM = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  function animateMarks(svg) {
+    if (RM) return;
+    svg.querySelectorAll("circle").forEach((c, k) => { c.classList.add("a-dot"); c.style.setProperty("--d", Math.min(k * 16, 640) + "ms"); });
+    svg.querySelectorAll(".a-sq").forEach((c, k) => c.style.setProperty("--d", Math.min(k * 16, 640) + "ms"));
+    svg.querySelectorAll(".a-bar, .a-barr, .a-barv, .a-cell").forEach((e, k) => e.style.setProperty("--d", Math.min(k * 22, 800) + "ms"));
+    svg.querySelectorAll("path.a-line").forEach(p => { try { p.style.setProperty("--len", p.getTotalLength()); } catch (e) { /* not measurable yet */ } });
+  }
+  function replay(scope) {
+    if (RM) return;
+    scope.querySelectorAll(".a-dot, .a-sq, .a-bar, .a-barr, .a-barv, .a-cell, .a-line").forEach(e => { e.style.animation = "none"; void e.getBoundingClientRect(); e.style.animation = ""; });
+  }
+  function typeText(el, text) {
+    clearInterval(el._t);
+    if (RM) { el.textContent = text; return; }
+    let n = 0; el.textContent = "";
+    el._t = setInterval(() => { n += 2; el.textContent = text.slice(0, n); if (n >= text.length) clearInterval(el._t); }, 14);
+  }
+
+  // ---------- load
+  Promise.all([fetch("data/results.json").then(r => r.json()), fetch("data/cases.json").then(r => r.json())])
+    .then(([R, C]) => start(R, C))
+    .catch(err => { document.querySelector("main").insertAdjacentHTML("afterbegin", '<p class="wrap loading">The results could not be loaded (' + String(err).slice(0, 80) + '). Reload the page to try again.</p>'); });
+
+  function start(R, C) {
+    const M = R.meta.models;
+    const repo = M.map(m => m.repo);
+    const lab = {}; M.forEach(m => lab[m.repo] = m.label + (m.kind === "medical" ? "*" : ""));
+    const replies = C.replies.map(s => JSON.parse(s));
+    const caseIdx = {}; C.cases.forEach((c, i) => caseIdx[c.id] = i);
+    $("#updated").textContent = new Date(R.meta.updated + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+    const risks = (m, p, i) => C.answers[m][p][i].map(k => replies[k].mortality_risk);
+    const icus = (m, p, i) => C.answers[m][p][i].map(k => replies[k].icu);
+    const shiftOf = r => (r[5] + r[6]) / 2 - (r[0] + r[1] + r[2] + r[3] + r[4]) / 5;
+    const rangeOf = r => Math.max(...r.slice(0, 7)) - Math.min(...r.slice(0, 7));
+    const daySentence = (c, v) => v === "none" ? `${c.pron} is admitted to the hospital in the morning.` : `${c.pron} is admitted to the hospital on a ${v} morning.`;
+
+    // hero stats
+    const hs = [["123,200", "answers from the models"], ["11", "open language models"], ["700", "patients: 300 synthetic, 400 real"], ["8", "versions of each patient"], ["0", "unusable answers"]];
+    $("#heroStats").innerHTML = hs.map(([a, b]) => `<div><b class="num">${a}</b><span>${b}</span></div>`).join("");
+    if (!RM) $("#heroStats").querySelectorAll("b").forEach(b => {
+      const fin = b.textContent, target = +fin.replace(/,/g, ""); if (!target) return;
+      const t0 = performance.now();
+      const step = now => { const p = Math.min(1, (now - t0) / 1500), e = 1 - Math.pow(1 - p, 3); b.textContent = p < 1 ? Math.round(target * e).toLocaleString("en-US") : fin; if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+
+    // hero split-flap: the same patient through the week
+    (function () {
+      const r = risks("NousResearch/Meta-Llama-3-8B-Instruct", "base", caseIdx["pe-severe-02"]);
+      const dEl = $("#flapDay"), rEl = $("#flapRisk"), box = $("#flipbox");
+      let k = 6, paused = false;
+      const set = () => { dEl.firstChild.textContent = DAYS[k]; rEl.firstChild.textContent = r[k] + "%"; [dEl, rEl].forEach(e => e.classList.toggle("we", k >= 5)); };
+      set();
+      if (RM) return;
+      box.addEventListener("mouseenter", () => { paused = true; }); box.addEventListener("mouseleave", () => { paused = false; });
+      setInterval(() => {
+        if (paused || document.hidden) return;
+        k = (k + 1) % 7;
+        [dEl, rEl].forEach(e => { e.classList.remove("flip"); void e.offsetWidth; e.classList.add("flip"); });
+        setTimeout(set, 160);
+      }, 1500);
+    })();
+
+    // day ticker
+    const week = SHORT.slice(0, 7).map((d, k) => `<span class="${k >= 5 ? "we" : ""}">${d.toUpperCase()}</span>`).join("");
+    $("#tkTrack").innerHTML = week.repeat(8);
+
+    // week rail follows the reader; charts and day pages animate when they come into view
+    const sec2day = { try: 0, how: 1, explore: 2, findings: 3, charts: 4, real: 5, stats: 5, models: 5, about: 6 };
+    const rail = document.querySelectorAll(".rail a");
+    if ("IntersectionObserver" in window) {
+      const io = new IntersectionObserver(es => es.forEach(e => {
+        if (!e.isIntersecting) return;
+        const d = sec2day[e.target.id];
+        rail.forEach((a, k) => { a.classList.toggle("on", k === d); a.classList.toggle("past", k < d); });
+      }), { rootMargin: "-45% 0px -50% 0px" });
+      Object.keys(sec2day).forEach(id => { const el = document.getElementById(id); if (el) io.observe(el); });
+      const io2 = new IntersectionObserver(es => es.forEach(e => {
+        if (!e.isIntersecting) return;
+        replay(e.target); if (!RM) e.target.classList.add("tear"); io2.unobserve(e.target);
+      }), { threshold: 0.2 });
+      setTimeout(() => document.querySelectorAll(".fig, .daybox").forEach(el => io2.observe(el)), 50);
+    }
+
+    // ---------- demo
+    const dSel = $("#demoModel");
+    M.forEach(m => dSel.add(new Option(m.label + (m.kind === "medical" ? " (medical)" : ""), m.repo)));
+    let demo = { m: "NousResearch/Meta-Llama-3-8B-Instruct", i: caseIdx["pe-severe-02"], v: 6 };
+    dSel.value = demo.m;
+    const flipsFor = m => C.cases.map((c, i) => i).filter(i => rangeOf(risks(m, "base", i)) >= 10);
+    function drawDemo(animate) {
+      const r = risks(demo.m, "base", demo.i), c = C.cases[demo.i];
+      const pages = $("#demoPages"); pages.innerHTML = ""; pages.classList.toggle("anim", !!animate && !RM);
+      r.forEach((x, k) => {
+        const b = H("button", { class: "page" + (k >= 5 && k < 7 ? " we" : "") + (k === 7 ? " none" : ""), type: "button", "aria-pressed": k === demo.v ? "true" : "false", "aria-label": `${SHORT[k]}: ${x} percent` }, `<i></i><small>${SHORT[k].toUpperCase()}</small><b class="num">${x}%</b>`);
+        b.style.setProperty("--d", (k * 60) + "ms");
+        b.addEventListener("click", () => { demo.v = k; drawDemo(); });
+        pages.appendChild(b);
+      });
+      const sh = shiftOf(r);
+      $("#demoBrk").textContent = "WEEKEND · " + (sh === 0 ? "NO CHANGE" : sgn(sh, 1) + " POINTS");
+      $("#demoShift").textContent = `This patient's weekend shift: ${sgn(sh, 1)} points`;
+      const v = C.variants[demo.v];
+      $("#demoCase").innerHTML = `<div class="eyebrow" style="margin-bottom:6px">${R.meta.conditions[c.condition]} · ${c.severity} · synthetic patient ${c.id}</div>${c.text} <mark>${daySentence(c, v)}</mark>`;
+      const avg = R.summary["synthetic|base"][demo.m].shift;
+      $("#demoNote").textContent = `Across all 300 synthetic patients, ${lab[demo.m].replace("*", "")}'s average weekend shift is ${sgn(avg, 2)} points. Averages hide flips like this one.`;
+    }
+    dSel.addEventListener("change", () => {
+      demo.m = dSel.value;
+      if (rangeOf(risks(demo.m, "base", demo.i)) === 0) { const f = flipsFor(demo.m); if (f.length) demo.i = f[Math.floor(Math.random() * f.length)]; }
+      drawDemo(true);
+    });
+    $("#demoFlip").addEventListener("click", () => {
+      let f = flipsFor(demo.m).filter(i => i !== demo.i);
+      if (!f.length) { const others = repo.filter(m => flipsFor(m).length); demo.m = others[Math.floor(Math.random() * others.length)]; dSel.value = demo.m; f = flipsFor(demo.m); }
+      demo.i = f[Math.floor(Math.random() * f.length)]; drawDemo(true);
+    });
+    drawDemo(true);
+
+    // ---------- how
+    const steps = [["1", "Write a case", "Age, history, vital signs, labs and diagnosis of an emergency patient. 300 synthetic cases across 10 conditions and 3 severities, plus 400 real MIMIC-IV admissions."],
+      ["2", "Make 8 versions", "Copy the case 8 times. Only the last sentence changes: admitted on a Monday … Sunday morning, or simply in the morning."],
+      ["3", "Ask each model", "Probability (0–100) that the patient dies in hospital, and ICU yes or no, answered as JSON. Once with the usual prompt, once with a fairness sentence."],
+      ["4", "Compare", "Same patient, different day. Any difference is caused by the day word. Then test across patients, models and prompts."]];
+    $("#howSteps").innerHTML = steps.map(s => `<div class="finding"><span class="n">${s[0]}</span><div><h3>${s[1]}</h3><p>${s[2]}</p></div></div>`).join("");
+    const P = R.meta.prompts;
+    $("#promptText").innerHTML = `<div class="msg"><span class="role">System</span>${P.system}<span style="background:var(--mark);padding:0 3px">${P.fair}</span></div>
+      <p style="font-size:14px;color:var(--muted);margin-top:6px">The highlighted sentence is added only in the fairness prompt.</p>
+      <div class="msg"><span class="role">User</span>Case: [the case text] [the day sentence]\n\n${P.question}</div>`;
+
+    // ---------- explorer
+    const conds = Object.keys(R.meta.conditions);
+    conds.forEach(k => $("#exCond").add(new Option(R.meta.conditions[k], k)));
+    for (let n = 0; n < 10; n++) $("#exNum").add(new Option("Patient " + (n + 1), String(n).padStart(2, "0")));
+    M.forEach(m => $("#exModel").add(new Option(m.label + (m.kind === "medical" ? " (medical)" : ""), m.repo)));
+    const ex = { cond: "pe", sev: "severe", num: "02", m: "NousResearch/Meta-Llama-3-8B-Instruct", p: "base", v: 6 };
+    $("#exCond").value = ex.cond; $("#exSev").value = ex.sev; $("#exNum").value = ex.num; $("#exModel").value = ex.m;
+    const tabs = $("#exTabs");
+    C.variants.forEach((v, k) => {
+      const b = H("button", { type: "button", class: k >= 5 && k < 7 ? "we" : "", "aria-pressed": "false" }, SHORT[k]);
+      b.addEventListener("click", () => { ex.v = k; drawEx(); }); tabs.appendChild(b);
+    });
+    function drawEx() {
+      const id = `${ex.cond}-${ex.sev}-${ex.num}`, i = caseIdx[id], c = C.cases[i];
+      tabs.querySelectorAll("button").forEach((b, k) => b.setAttribute("aria-pressed", k === ex.v ? "true" : "false"));
+      const v = C.variants[ex.v];
+      const sys = P.system + (ex.p === "fair" ? P.fair : "");
+      $("#exInput").innerHTML = `<div class="msg"><span class="role">System</span>${sys}</div><div class="msg"><span class="role">User</span>Case: ${c.text} <mark>${daySentence(c, v)}</mark>\n\n${P.question}</div>
+        <p style="font-size:13.5px;color:var(--muted);margin-top:8px">Models whose chat format has no system role (such as Mistral-7B v0.1) receive the system text at the top of the user message.</p>`;
+      const r = risks(ex.m, ex.p, i), ic = icus(ex.m, ex.p, i);
+      typeText($("#exReply"), C.replies[C.answers[ex.m][ex.p][i][ex.v]]);
+      // strip
+      const W = 520, Hh = 150, svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Predicted risk for this patient on each day" });
+      const bw = W / 8, y = scale(0, 100, Hh - 26, 14);
+      r.forEach((x, k) => {
+        const g = S("g", {}, svg);
+        S("rect", { x: k * bw + 6, y: 14, width: bw - 12, height: Hh - 40, fill: "var(--grid)" }, g);
+        S("rect", { class: "a-barv", x: k * bw + 6, y: y(x), width: bw - 12, height: (Hh - 26) - y(x), fill: k >= 5 && k < 7 ? "var(--hot)" : k === 7 ? "var(--line)" : "var(--accent2)", stroke: k === ex.v ? "var(--ink)" : "none", "stroke-width": 2.5 }, g);
+        T(g, k * bw + bw / 2, y(x) - 4, x + "%", { "text-anchor": "middle", fill: "var(--ink)", "font-weight": 600 });
+        T(g, k * bw + bw / 2, Hh - 8, SHORT[k], { "text-anchor": "middle", "font-size": 12 });
+        if (ic[k] === "yes") T(g, k * bw + bw / 2, 30, "ICU", { "text-anchor": "middle", "font-size": 10.5, fill: "var(--ink)", "font-weight": 600 });
+        tip(g, () => `<b>${DAYS[k] || "No day"}</b><br>${x}% risk of death · ICU: ${ic[k]}`);
+      });
+      $("#exStrip").innerHTML = ""; $("#exStrip").appendChild(svg); animateMarks(svg);
+      const sh = shiftOf(r), rg = rangeOf(r);
+      $("#exSummary").innerHTML = rg === 0 ? `<b>Stable.</b> ${lab[ex.m]} gives this patient the same risk on every named day.` :
+        `<b>This patient flips.</b> Risk moves by up to ${rg} points across the week; weekend shift ${sgn(sh, 1)} points.`;
+      // matrix
+      let html = `<table><thead><tr><th>Model</th>${SHORT.map(s => `<th>${s}</th>`).join("")}<th>Shift</th></tr></thead><tbody>`;
+      repo.forEach(m => {
+        const rr = risks(m, ex.p, i), ii = icus(m, ex.p, i), base = (rr[0] + rr[1] + rr[2] + rr[3] + rr[4]) / 5;
+        html += `<tr class="${rangeOf(rr) > 0 ? "flip" : ""}"><td>${lab[m]}</td>` + rr.map((x, k) => {
+          const dlt = x - base, a = Math.min(1, Math.abs(dlt) / 20);
+          const bg = dlt > 0 ? `color-mix(in srgb, var(--accent) ${Math.round(a * 85)}%, var(--surface))` : dlt < 0 ? `color-mix(in srgb, var(--accent2) ${Math.round(a * 70)}%, var(--surface))` : "transparent";
+          return `<td style="background:${bg}${ii[k] === "yes" ? ";font-weight:700" : ""}">${x}</td>`;
+        }).join("") + `<td>${sgn(shiftOf(rr), 1)}</td></tr>`;
+      });
+      $("#exMatrix").innerHTML = html + "</tbody></table>";
+    }
+    ["#exCond", "#exSev", "#exNum"].forEach(s => $(s).addEventListener("change", () => { ex.cond = $("#exCond").value; ex.sev = $("#exSev").value; ex.num = $("#exNum").value; drawEx(); }));
+    $("#exModel").addEventListener("change", () => { ex.m = $("#exModel").value; drawEx(); });
+    seg($("#exPrompt"), v => { ex.p = v; drawEx(); });
+    $("#exNext").addEventListener("click", () => {
+      const cur = caseIdx[`${ex.cond}-${ex.sev}-${ex.num}`];
+      for (let s = 1; s <= C.cases.length; s++) {
+        const j = (cur + s) % C.cases.length;
+        if (rangeOf(risks(ex.m, ex.p, j)) > 0) { const c = C.cases[j]; ex.cond = c.condition; ex.sev = c.severity; ex.num = c.id.slice(-2); $("#exCond").value = ex.cond; $("#exSev").value = ex.sev; $("#exNum").value = ex.num; break; }
+      }
+      drawEx();
+    });
+    drawEx();
+
+    // ---------- findings + facts
+    const F = [
+      ["Every model reacts to the day name.", "All 11 give different risks on different days more often than chance (Friedman test). The effect per answer is tiny (Kendall's W 0.01–0.08)."],
+      ["7 of 11 models shift real patients at weekends.", "Five raise weekend risk (Qwen2.5 0.5B, 1.5B, 3B, 14B, 32B) and two lower it (Qwen2.5-7B, BioMistral), after correcting for 11 tests. Synthetic patients: 6 of 11."],
+      ["The average shift is small.", "−0.8 to +3.9 points on a 0–100 scale, because 79–97% of patients get exactly the same answer on all seven days."],
+      ["When an answer changes, it jumps.", "About two-thirds of the synthetic patients who move swing 10 points or more. The largest single swing is 90 points."],
+      ["Direction belongs to the model.", "Qwen2.5-7B lowers weekend risk while its smaller and larger siblings raise it. The 11 models differ far beyond chance (p = 1 × 10⁻¹⁹)."],
+      ["Just naming a day changes risk.", "Compared with no day, Med42 adds 2.1 points and OpenBioLLM 1.9 on synthetic patients; Qwen2.5-0.5B drops 4.9 on real ones."],
+      ["Bigger is not cleaner.", "Qwen2.5-32B ranks real deaths well (AUROC 0.91) yet adds +0.64 points at weekends, and the weekend is its most different of 21 day pairs."],
+      ["Medical training does not fix it.", "BioMistral shifts the opposite way from its base Mistral. OpenBioLLM answers about 50% for almost everyone."],
+      ["Asking politely barely helps.", "With a sentence saying the day is not clinical information, 2 models stop shifting on real patients and 4 stay shifted, including the two largest."],
+      ["ICU decisions hardly move.", "0–3.5% of patients flip between ICU yes and no with the weekend."],
+      ["Real gaps are mostly case mix.", "Real weekend and night death gaps (odds ratio up to 1.31) mostly vanish after adjusting for unit, admission source and severity: eICU night 1.31 → 0.96."],
+      ["MIMIC-IV hides the real weekday.", "Its planned admissions do not dip at weekends, so its weekend effect cannot be measured; MIMIC-III keeps real weekdays."]];
+    $("#findingList").innerHTML = F.map((f, k) => `<div class="finding"><span class="n">${k + 1}</span><div><h3>${f[0]}</h3><p>${f[1]}</p></div></div>`).join("");
+    const facts = [["+20", "points of death risk for a woman with a large pulmonary embolism, from Llama-3-8B, only because the case says Saturday or Sunday."],
+      ["90", "points: the biggest single swing, from BioMistral, for one synthetic patient across the week."],
+      ["7.8 → 13.6%", "Qwen2.5-0.5B's average risk for the same 400 real patients, Monday versus Sunday."],
+      ["21 of 21", "Med42's weekend is the least different of all 21 pairs of days on real patients. With Llama-3-8B, it is one of the two cleanest models."],
+      ["50%", "OpenBioLLM's answer for 2,395 of 2,400 synthetic prompts once it is told to ignore the day."],
+      ["28.9%", "of MIMIC-IV's planned admissions fall on weekends, which is impossible in a real hospital and reveals its shifted dates."],
+      ["12.6% vs 10.2%", "APACHE-predicted risk of night versus daytime ICU patients in eICU. Sicker patients arrive at night."],
+      ["0", "unusable answers out of 123,200, because the decoder forced valid JSON."]];
+    $("#factList").innerHTML = facts.map(f => `<div class="fact"><b class="num">${f[0]}</b><p>${f[1]}</p></div>`).join("");
+
+    // ---------- chart: forest
+    (function () {
+      const fig = $("#f-forest"), st = { ds: "both", pr: "base" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      function draw() {
+        const W = 760, rowH = 40, top = 34, left = 150, right = 30, Hh = top + rowH * repo.length + 40;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Weekend shift per model with confidence intervals" });
+        const x = scale(-1.6, 5.6, left, W - right);
+        [-1, 0, 1, 2, 3, 4, 5].forEach(t => { S("line", { x1: x(t), x2: x(t), y1: top - 10, y2: Hh - 34, stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); T(svg, x(t), Hh - 16, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t), { "text-anchor": "middle" }); });
+        T(svg, x(0) + 6, top - 16, "higher on weekends →", { "font-size": 12 }); T(svg, x(0) - 6, top - 16, "← lower", { "font-size": 12, "text-anchor": "end" });
+        T(svg, (left + W - right) / 2, Hh, "Weekend shift in predicted death risk (points)", { "text-anchor": "middle", "font-size": 12.5 });
+        const sets = st.ds === "both" ? [["synthetic", -7], ["mimic", 7]] : [[st.ds, 0]];
+        repo.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2;
+          if (k % 2 === 0) S("rect", { x: left - 4, y: yy - rowH / 2, width: W - right - left + 8, height: rowH, fill: "var(--grid)", opacity: .35 }, svg);
+          T(svg, left - 12, yy + 4, lab[m], { "text-anchor": "end", fill: M[k].kind === "medical" ? "var(--muted)" : "var(--ink)", "font-size": 13.5 });
+          sets.forEach(([ds, dy]) => {
+            const d = R.summary[ds + "|" + st.pr][m]; if (!d) return;
+            const g = S("g", {}, svg);
+            S("line", { x1: x(Math.max(-1.6, d.lo)), x2: x(Math.min(5.6, d.hi)), y1: yy + dy, y2: yy + dy, stroke: "var(--ink)", "stroke-width": 2 }, g);
+            const col = ds === "mimic" ? "var(--accent)" : "var(--accent2)";
+            if (ds === "mimic") S("circle", { cx: x(d.shift), cy: yy + dy, r: 7, fill: d.sig ? col : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.8 }, g);
+            else S("rect", { class: "a-sq", x: x(d.shift) - 6, y: yy + dy - 6, width: 12, height: 12, fill: d.sig ? col : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.8 }, g);
+            tip(g, () => `<b>${lab[m]}</b> · ${ds === "mimic" ? "400 real patients" : "300 synthetic patients"}<br>Weekend shift ${sgn(d.shift)} points (95% CI ${sgn(d.lo)} to ${sgn(d.hi)})<br>Holm p ${pfmt(d.p_holm)} · ${d.sig ? "significant" : "not significant"}<br>Weekend rank ${d.rank} of 21 day pairs<br>Implied odds ratio ${d.implied_or.toFixed(2)} · ${pct(d.any_change)} of patients change`);
+          });
+        });
+        // legend
+        const lg = S("g", { transform: `translate(${W - right - 220}, ${Hh - 120})` }, svg);
+        if (st.ds !== "synthetic") { S("circle", { cx: 8, cy: 0, r: 7, fill: "var(--accent)", stroke: "var(--ink)", "stroke-width": 1.8 }, lg); T(lg, 22, 4, "400 real patients", { fill: "var(--ink)" }); }
+        if (st.ds !== "mimic") { S("rect", { x: 2, y: 18, width: 12, height: 12, fill: "var(--accent2)", stroke: "var(--ink)", "stroke-width": 1.8 }, lg); T(lg, 22, 28, "300 synthetic patients", { fill: "var(--ink)" }); }
+        S("circle", { cx: 8, cy: 48, r: 7, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.8 }, lg); T(lg, 22, 52, "hollow = not significant", { fill: "var(--ink)" });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: flips
+    (function () {
+      const fig = $("#f-flips"), st = { pr: "base" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      function draw() {
+        const W = 760, rowH = 36, top = 10, left = 150, right = 70, Hh = top + rowH * repo.length + 44, xmax = 35;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Share of patients whose risk changes with the day" });
+        const x = scale(0, xmax, left, W - right);
+        [0, 5, 10, 15, 20, 25, 30, 35].forEach(t => { S("line", { x1: x(t), x2: x(t), y1: top, y2: Hh - 38, stroke: "var(--grid)" }, svg); T(svg, x(t), Hh - 22, t + "%", { "text-anchor": "middle" }); });
+        T(svg, (left + W - right) / 2, Hh - 4, "Patients whose risk changes with the day alone", { "text-anchor": "middle", "font-size": 12.5 });
+        repo.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2;
+          let any = 0, big = 0, mx = 0;
+          C.cases.forEach((c, i) => { const rg = rangeOf(risks(m, st.pr, i)); if (rg > 0) any++; if (rg >= 10) big++; mx = Math.max(mx, rg); });
+          any /= C.cases.length; big /= C.cases.length;
+          const real = R.summary["mimic|" + st.pr][m].any_change;
+          T(svg, left - 12, yy + 4, lab[m], { "text-anchor": "end", fill: M[k].kind === "medical" ? "var(--muted)" : "var(--ink)", "font-size": 13.5 });
+          const g = S("g", {}, svg);
+          S("rect", { class: "a-bar", x: x(0), y: yy - 11, width: x(any * 100) - x(0), height: 22, fill: "var(--line)" }, g);
+          S("rect", { class: "a-bar", x: x(0), y: yy - 11, width: x(big * 100) - x(0), height: 22, fill: "var(--ink)" }, g);
+          S("circle", { cx: x(Math.min(xmax, real * 100)), cy: yy, r: 6.5, fill: "var(--accent)", stroke: "var(--ink)", "stroke-width": 1.6 }, g);
+          T(g, x(Math.max(any, real) * 100) + 12, yy + 4, "max " + mx, { "font-size": 12 });
+          tip(g, () => `<b>${lab[m]}</b><br>Synthetic: ${pct(any)} change, ${pct(big)} by 10+ points, biggest swing ${mx} points<br>Real patients: ${pct(real)} change`);
+        });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: day profile
+    (function () {
+      const fig = $("#f-profile"), st = { ds: "mimic", pr: "base", sel: ["Qwen/Qwen2.5-32B-Instruct-GPTQ-Int4", "Qwen/Qwen2.5-7B-Instruct", "NousResearch/Meta-Llama-3-8B-Instruct"] };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      const chips = fig.querySelector(".chips");
+      const COLS = ["var(--accent)", "var(--accent2)", "var(--ink)", "var(--muted)"], DASH = [null, null, null, "6 4"];
+      repo.forEach(m => {
+        const b = H("button", { type: "button", "aria-pressed": st.sel.includes(m) ? "true" : "false" }, lab[m]);
+        b.addEventListener("click", () => {
+          if (st.sel.includes(m)) st.sel = st.sel.filter(x => x !== m); else { st.sel.push(m); if (st.sel.length > 4) st.sel.shift(); }
+          chips.querySelectorAll("button").forEach((x, k) => x.setAttribute("aria-pressed", st.sel.includes(repo[k]) ? "true" : "false"));
+          draw();
+        });
+        chips.appendChild(b);
+      });
+      function draw() {
+        const W = 760, Hh = 380, left = 56, right = 170, top = 44, bottom = 40;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Predicted risk by admission day" });
+        const series = st.sel.map(m => { const v = R.profile[st.ds + "|" + st.pr][m]; const b = (v[0] + v[1] + v[2] + v[3] + v[4]) / 5; return { m, vals: v.map(x => x - b) }; });
+        let lo = -1, hi = 1; series.forEach(s => s.vals.forEach(v => { lo = Math.min(lo, v); hi = Math.max(hi, v); }));
+        lo = Math.floor(lo - .3); hi = Math.ceil(hi + .3);
+        const step = (W - left - right) / 7.6;
+        const x = k => left + (k < 7 ? k : 7.6) * step, y = scale(lo, hi, Hh - bottom, top);
+        S("rect", { x: x(5) - step / 2, y: top - 6, width: step * 2, height: Hh - bottom - top + 6, fill: "var(--hot)", opacity: .22 }, svg);
+        T(svg, x(5) + step / 2, top + 8, "weekend", { "text-anchor": "middle", "font-size": 12 });
+        const ticks = []; const span = hi - lo, inc = span > 8 ? 2 : span > 4 ? 1 : 0.5; for (let t = Math.ceil(lo / inc) * inc; t <= hi + 1e-9; t += inc) ticks.push(+t.toFixed(2));
+        ticks.forEach(t => { S("line", { x1: left, x2: W - right + 10, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); T(svg, left - 8, y(t) + 4, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t), { "text-anchor": "end" }); });
+        SHORT.forEach((s, k) => T(svg, x(k), Hh - 16, s, { "text-anchor": "middle", fill: k === 7 ? "var(--muted)" : "var(--ink)" }));
+        T(svg, 0, 14, "points vs that model's weekday average", { "font-size": 12.5 });
+        const ends = [];
+        series.forEach((s, j) => {
+          const g = S("g", {}, svg);
+          const d = s.vals.slice(0, 7).map((v, k) => `${k ? "L" : "M"}${x(k)},${y(v)}`).join(" ");
+          S("path", { class: DASH[j] ? null : "a-line", d, fill: "none", stroke: COLS[j], "stroke-width": 3, "stroke-dasharray": DASH[j] }, g);
+          S("line", { x1: x(6), x2: x(7), y1: y(s.vals[6]), y2: y(s.vals[7]), stroke: COLS[j], "stroke-width": 1.5, "stroke-dasharray": "2 4" }, g);
+          s.vals.forEach((v, k) => { const c = S("circle", { cx: x(k), cy: y(v), r: 5.5, fill: COLS[j], stroke: "var(--surface)", "stroke-width": 1.5 }, g); tip(c, () => `<b>${lab[s.m]}</b> · ${k < 7 ? DAYS[k] : "no day named"}<br>${sgn(v)} points vs weekday average<br>mean risk ${R.profile[st.ds + "|" + st.pr][s.m][k].toFixed(1)}%`); });
+          ends.push({ y: y(s.vals[6]), t: `${lab[s.m]} ${sgn(s.vals[6], 2)}`, c: COLS[j] });
+        });
+        ends.sort((a, b) => a.y - b.y); for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 16) ends[k].y = ends[k - 1].y + 16;
+        ends.forEach(e => T(svg, x(7.6) - 4 + 22, e.y + 4, e.t, { fill: "var(--ink)", "font-size": 13 }));
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: 21 day pairs
+    (function () {
+      const fig = $("#f-pairs"), st = { pr: "base", m: "Qwen/Qwen2.5-7B-Instruct" };
+      const sel = $("#pairModel"); M.forEach(m => sel.add(new Option(m.label, m.repo))); sel.value = st.m;
+      sel.addEventListener("change", () => { st.m = sel.value; draw(); });
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      function draw() {
+        const pairs = [];
+        for (let a = 0; a < 7; a++) for (let b = a + 1; b < 7; b++) {
+          let s = 0;
+          C.cases.forEach((c, i) => { const r = risks(st.m, st.pr, i); let rest = 0; for (let k = 0; k < 7; k++) if (k !== a && k !== b) rest += r[k]; s += (r[a] + r[b]) / 2 - rest / 5; });
+          pairs.push({ a, b, v: s / C.cases.length, we: a === 5 && b === 6 });
+        }
+        const rank = 1 + pairs.filter(p => !p.we && Math.abs(p.v) > Math.abs(pairs.find(q => q.we).v) + 1e-12).length;
+        const W = 760, Hh = 170, left = 30, right = 30;
+        const ext = Math.max(0.5, ...pairs.map(p => Math.abs(p.v))) * 1.15;
+        const x = scale(-ext, ext, left, W - right);
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Shift for all 21 pairs of days" });
+        S("line", { x1: left, x2: W - right, y1: 90, y2: 90, stroke: "var(--line)", "stroke-width": 2 }, svg);
+        S("line", { x1: x(0), x2: x(0), y1: 40, y2: 130, stroke: "var(--muted)", "stroke-dasharray": "4 3" }, svg);
+        T(svg, x(0), 150, "0", { "text-anchor": "middle" }); T(svg, x(-ext) + 4, 150, sgn(-ext, 1)); T(svg, x(ext) - 4, 150, sgn(ext, 1), { "text-anchor": "end" });
+        T(svg, W / 2, 168, "pair of days vs the other five, points (synthetic patients)", { "text-anchor": "middle", "font-size": 12 });
+        pairs.sort((p, q) => p.we - q.we).forEach((p, k) => {
+          const g = S("g", {}, svg);
+          const jitter = p.we ? 0 : ((k % 3) - 1) * 12;
+          S("circle", { cx: x(p.v), cy: 90 + jitter, r: p.we ? 13 : 6.5, fill: p.we ? "var(--hot)" : "var(--accent2)", stroke: "var(--ink)", "stroke-width": p.we ? 2.2 : 1, opacity: p.we ? 1 : .8 }, g);
+          if (p.we) T(g, x(p.v), 62, "Sat + Sun", { "text-anchor": "middle", fill: "var(--ink)", "font-weight": 600 });
+          tip(g, () => `<b>${SHORT[p.a]} + ${SHORT[p.b]}</b><br>${sgn(p.v)} points vs the other five days`);
+        });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+        const real = R.summary["mimic|" + st.pr][st.m];
+        $("#pairRead").innerHTML = `<b>${lab[st.m]}:</b> on synthetic patients the weekend ranks <b>${rank} of 21</b> by size. On real patients it ranks <b>${real.rank} of 21</b>. Rank 1 means no other pair of days moves the risk as much as Saturday + Sunday.`;
+      }
+      draw();
+    })();
+
+    // ---------- chart: heatmap
+    (function () {
+      const fig = $("#f-heat"), st = { pr: "base" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      const order = ["hip_fracture", "nstemi", "pe", "pneumonia", "gi_bleed", "sepsis_uti", "heart_failure", "stroke", "copd", "dka"];
+      const short = { hip_fracture: "Hip fx", nstemi: "NSTEMI", pe: "PE", pneumonia: "Pneum.", gi_bleed: "GI bleed", sepsis_uti: "Urosepsis", heart_failure: "Heart fail.", stroke: "Stroke", copd: "COPD", dka: "DKA" };
+      function draw() {
+        const W = 760, left = 150, top = 40, cw = (W - left) / order.length, ch = 30, Hh = top + ch * repo.length + 10;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Weekend shift by model and condition", style: "min-width:620px" });
+        order.forEach((c, j) => T(svg, left + cw * j + cw / 2, top - 12, short[c], { "text-anchor": "middle", "font-size": 12, fill: "var(--ink)" }));
+        repo.forEach((m, k) => {
+          T(svg, left - 10, top + ch * k + ch / 2 + 4, lab[m], { "text-anchor": "end", fill: M[k].kind === "medical" ? "var(--muted)" : "var(--ink)", "font-size": 13 });
+          const g0 = (R.subgroups[st.pr][m] || {}).condition || {};
+          order.forEach((c, j) => {
+            const v = g0[c]; const g = S("g", {}, svg);
+            const a = Math.min(1, Math.abs(v || 0) / 4);
+            S("rect", { class: "a-cell", x: left + cw * j + 1, y: top + ch * k + 1, width: cw - 2, height: ch - 2, fill: v > 0 ? "var(--accent)" : v < 0 ? "var(--accent2)" : "var(--grid)", "fill-opacity": v ? 0.15 + 0.85 * a : 1 }, g);
+            T(g, left + cw * j + cw / 2, top + ch * k + ch / 2 + 4, v === 0 ? "0" : sgn(v, 1), { "text-anchor": "middle", "font-size": 12, fill: "var(--ink)", "font-weight": Math.abs(v) >= 1 ? 600 : 400 });
+            tip(g, () => `<b>${lab[m]}</b> · ${R.meta.conditions[c]}<br>Weekend shift ${sgn(v)} points (30 patients)`);
+          });
+        });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: scaling
+    (function () {
+      const fig = $("#f-scale"), st = { pr: "base" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      const Q = repo.slice(0, 6), size = M.slice(0, 6).map(m => m.params);
+      function draw() {
+        const W = 560, Hh = 380, left = 50, right = 20, top = 64, bottom = 44;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Weekend shift across Qwen2.5 sizes" });
+        const lx = scale(Math.log(0.4), Math.log(40), left, W - right), x = v => lx(Math.log(v));
+        const y = scale(-1.5, 6, Hh - bottom, top);
+        [-1, 0, 1, 2, 3, 4, 5, 6].forEach(t => { S("line", { x1: left, x2: W - right, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); T(svg, left - 8, y(t) + 4, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t), { "text-anchor": "end" }); });
+        T(svg, left, 18, "AUROC for real deaths", { "font-size": 12 });
+        Q.forEach((m, k) => { T(svg, x(size[k]), 40, R.calib[m].auroc.toFixed(2), { "text-anchor": "middle", fill: "var(--ink)", "font-weight": 600 }); T(svg, x(size[k]), Hh - 20, M[k].label.replace("Qwen2.5-", ""), { "text-anchor": "middle" }); });
+        T(svg, (left + W - right) / 2, Hh - 2, "Qwen2.5 model size", { "text-anchor": "middle", "font-size": 12 });
+        [["synthetic", "var(--accent2)", "rect"], ["mimic", "var(--accent)", "circle"]].forEach(([ds, col, shape]) => {
+          const d = Q.map(m => R.summary[ds + "|" + st.pr][m]);
+          const band = d.map((v, k) => `${k ? "L" : "M"}${x(size[k])},${y(v.hi)}`).join(" ") + " " + d.slice().reverse().map((v, k) => `L${x(size[size.length - 1 - k])},${y(v.lo)}`).join(" ") + " Z";
+          S("path", { d: band, fill: col, opacity: .2 }, svg);
+          S("path", { class: "a-line", d: d.map((v, k) => `${k ? "L" : "M"}${x(size[k])},${y(v.shift)}`).join(" "), fill: "none", stroke: "var(--ink)", "stroke-width": ds === "mimic" ? 2.6 : 1.8 }, svg);
+          d.forEach((v, k) => {
+            const g = S("g", {}, svg);
+            if (shape === "circle") S("circle", { cx: x(size[k]), cy: y(v.shift), r: 7, fill: col, stroke: "var(--ink)", "stroke-width": 1.8 }, g);
+            else S("rect", { class: "a-sq", x: x(size[k]) - 6, y: y(v.shift) - 6, width: 12, height: 12, fill: col, stroke: "var(--ink)", "stroke-width": 1.8 }, g);
+            tip(g, () => `<b>${M[k].label}</b> · ${ds === "mimic" ? "real" : "synthetic"} patients<br>Shift ${sgn(v.shift)} (${sgn(v.lo)} to ${sgn(v.hi)})<br>AUROC ${R.calib[Q[k]].auroc.toFixed(3)}`);
+          });
+        });
+        const lg = S("g", { transform: `translate(${W - right - 150}, ${top + 20})` }, svg);
+        S("circle", { cx: 8, cy: 0, r: 7, fill: "var(--accent)", stroke: "var(--ink)", "stroke-width": 1.8 }, lg); T(lg, 22, 4, "real patients", { fill: "var(--ink)" });
+        S("rect", { x: 2, y: 18, width: 12, height: 12, fill: "var(--accent2)", stroke: "var(--ink)", "stroke-width": 1.8 }, lg); T(lg, 22, 28, "synthetic", { fill: "var(--ink)" });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: fairness sentence
+    (function () {
+      const fig = $("#f-fix"), st = { ds: "mimic" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      function draw() {
+        const W = 560, rowH = 30, top = 16, left = 120, right = 96, Hh = top + rowH * repo.length + 40;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Weekend shift with and without the fairness sentence" });
+        const x = scale(-1.6, 4.4, left, W - right);
+        [-1, 0, 1, 2, 3, 4].forEach(t => { S("line", { x1: x(t), x2: x(t), y1: top - 6, y2: Hh - 34, stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); T(svg, x(t), Hh - 18, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t), { "text-anchor": "middle" }); });
+        T(svg, (left + W - right) / 2, Hh - 2, "Weekend shift (points)", { "text-anchor": "middle", "font-size": 12 });
+        repo.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2, a = R.summary[st.ds + "|base"][m], b = R.summary[st.ds + "|fair"][m];
+          T(svg, left - 10, yy + 4, lab[m], { "text-anchor": "end", fill: M[k].kind === "medical" ? "var(--muted)" : "var(--ink)", "font-size": 12.5 });
+          const g = S("g", {}, svg);
+          const xa = x(Math.min(4.4, a.shift)), xb = x(Math.min(4.4, b.shift));
+          S("line", { x1: xa, x2: xb + (xb > xa ? -9 : 9), y1: yy, y2: yy, stroke: "var(--muted)", "stroke-width": 2 }, g);
+          if (Math.abs(xb - xa) > 14) S("path", { d: `M${xb + (xb > xa ? -9 : 9)},${yy - 5} L${xb + (xb > xa ? -2 : 2)},${yy} L${xb + (xb > xa ? -9 : 9)},${yy + 5} Z`, fill: "var(--muted)" }, g);
+          S("circle", { cx: xa, cy: yy, r: 5.5, fill: a.sig ? "var(--line)" : "var(--surface)", stroke: "var(--muted)", "stroke-width": 1.6 }, g);
+          S("circle", { cx: xb, cy: yy, r: 7, fill: b.sig ? "var(--accent)" : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.8 }, g);
+          const tag = b.sig ? "still shifted" : a.sig && Math.abs(b.shift) <= 0.5 * Math.abs(a.shift) ? "removed" : a.sig ? "unclear" : "–";
+          T(svg, W - right + 10, yy + 4, tag, { fill: b.sig ? "var(--ink)" : "var(--muted)", "font-size": 12, "font-weight": b.sig ? 600 : 400 });
+          tip(g, () => `<b>${lab[m]}</b><br>Usual prompt ${sgn(a.shift)} (${a.sig ? "significant" : "n.s."})<br>+ fairness sentence ${sgn(b.shift)} (${b.sig ? "significant" : "n.s."})`);
+        });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: naming any day
+    (function () {
+      const fig = $("#f-noday"), st = { ds: "mimic", pr: "base" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      function draw() {
+        const W = 560, rowH = 30, top = 10, left = 120, right = 20, Hh = top + rowH * repo.length + 40;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Effect of naming any day versus no day" });
+        const x = scale(-7, 3, left, W - right);
+        [-6, -4, -2, 0, 2].forEach(t => { S("line", { x1: x(t), x2: x(t), y1: top, y2: Hh - 34, stroke: t === 0 ? "var(--muted)" : "var(--grid)" }, svg); T(svg, x(t), Hh - 18, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t), { "text-anchor": "middle" }); });
+        T(svg, (left + W - right) / 2, Hh - 2, "Named day minus no day (points)", { "text-anchor": "middle", "font-size": 12 });
+        repo.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2, v = R.summary[st.ds + "|" + st.pr][m].anyday_vs_none;
+          T(svg, left - 10, yy + 4, lab[m], { "text-anchor": "end", fill: M[k].kind === "medical" ? "var(--muted)" : "var(--ink)", "font-size": 12.5 });
+          const g = S("g", {}, svg);
+          S("rect", { class: v >= 0 ? "a-bar" : "a-barr", x: Math.min(x(0), x(v)), y: yy - 9, width: Math.abs(x(v) - x(0)), height: 18, fill: v >= 0 ? "var(--accent)" : "var(--accent2)" }, g);
+          T(g, v >= 0 ? x(v) + 5 : x(v) - 5, yy + 4, sgn(v, 1), { "text-anchor": v >= 0 ? "start" : "end", fill: "var(--ink)", "font-size": 12 });
+          tip(g, () => `<b>${lab[m]}</b><br>Average of the 7 named days minus no day: ${sgn(v)} points`);
+        });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- chart: calibration
+    (function () {
+      const fig = $("#f-calib");
+      const W = 560, rowH = 30, top = 30, left = 120, mid = 330, Hh = top + rowH * repo.length + 40;
+      const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "AUROC and mean predicted risk on real patients" });
+      const xa = scale(0.5, 1, left, mid - 30), xm = scale(0, 100, mid + 10, W - 20);
+      T(svg, left, 14, "AUROC", { "font-size": 12, fill: "var(--ink)", "font-weight": 600 }); T(svg, mid + 10, 14, "Average predicted risk", { "font-size": 12, fill: "var(--ink)", "font-weight": 600 });
+      [0.5, 0.75, 1].forEach(t => { S("line", { x1: xa(t), x2: xa(t), y1: top - 6, y2: Hh - 34, stroke: "var(--grid)" }, svg); T(svg, xa(t), Hh - 18, t.toFixed(2), { "text-anchor": "middle" }); });
+      [0, 25, 50, 75, 100].forEach(t => { S("line", { x1: xm(t), x2: xm(t), y1: top - 6, y2: Hh - 34, stroke: t === 25 ? "var(--ink)" : "var(--grid)", "stroke-dasharray": t === 25 ? "4 3" : null }, svg); T(svg, xm(t), Hh - 18, t + "%", { "text-anchor": "middle" }); });
+      T(svg, xm(25) + 4, Hh - 2, "25% really died", { "font-size": 11.5, fill: "var(--ink)" });
+      repo.forEach((m, k) => {
+        const yy = top + rowH * k + rowH / 2, c = R.calib[m];
+        T(svg, left - 10, yy + 4, lab[m], { "text-anchor": "end", fill: M[k].kind === "medical" ? "var(--muted)" : "var(--ink)", "font-size": 12.5 });
+        const g = S("g", {}, svg);
+        S("rect", { class: "a-bar", x: xa(0.5), y: yy - 9, width: xa(c.auroc) - xa(0.5), height: 18, fill: "var(--accent2)" }, g);
+        T(g, xa(c.auroc) + 4, yy + 4, c.auroc.toFixed(2), { "font-size": 12, fill: "var(--ink)" });
+        S("line", { x1: xm(25), x2: xm(c.mean_pred), y1: yy, y2: yy, stroke: "var(--line)", "stroke-width": 3 }, g);
+        S("circle", { cx: xm(c.mean_pred), cy: yy, r: 6.5, fill: "var(--accent)", stroke: "var(--ink)", "stroke-width": 1.6 }, g);
+        tip(g, () => `<b>${lab[m]}</b><br>AUROC ${c.auroc.toFixed(3)} · Brier ${c.brier.toFixed(3)}<br>Average predicted risk ${c.mean_pred}% (25% died)<br>Sends ${pct(c.icu_died, 0)} of patients who died and ${pct(c.icu_survived, 0)} of survivors to the ICU`);
+      });
+      fig.querySelector(".plot").appendChild(svg); animateMarks(svg);
+    })();
+
+    // ---------- real: weekday check
+    (function () {
+      const fig = $("#f-dow"), d = R.real.dow;
+      const W = 560, Hh = 320, left = 44, right = 10, top = 46, bottom = 34;
+      const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Share of planned admissions by weekday" });
+      const s3 = d.mimic3_elective.reduce((a, b) => a + b, 0), s4 = d.mimic4_elective.reduce((a, b) => a + b, 0);
+      const bw = (W - left - right) / 7, y = scale(0, 30, Hh - bottom, top);
+      S("rect", { x: left + bw * 5, y: top - 8, width: bw * 2, height: Hh - bottom - top + 8, fill: "var(--hot)", opacity: .25 }, svg);
+      [0, 10, 20, 30].forEach(t => { S("line", { x1: left, x2: W - right, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg); T(svg, left - 6, y(t) + 4, t + "%", { "text-anchor": "end" }); });
+      S("line", { x1: left, x2: W - right, y1: y(100 / 7), y2: y(100 / 7), stroke: "var(--muted)", "stroke-dasharray": "4 3" }, svg);
+      T(svg, W - right, y(100 / 7) - 6, "no weekly pattern", { "text-anchor": "end", "font-size": 11.5 });
+      d.days.forEach((dd, k) => {
+        const a = 100 * d.mimic3_elective[k] / s3, b = 100 * d.mimic4_elective[k] / s4, g = S("g", {}, svg);
+        S("rect", { class: "a-barv", x: left + bw * k + 6, y: y(a), width: bw / 2 - 7, height: y(0) - y(a), fill: "var(--ink)" }, g);
+        S("rect", { class: "a-barv", x: left + bw * k + bw / 2 + 1, y: y(b), width: bw / 2 - 7, height: y(0) - y(b), fill: "var(--line)" }, g);
+        T(svg, left + bw * k + bw / 2, Hh - 12, dd, { "text-anchor": "middle", fill: "var(--ink)" });
+        tip(g, () => `<b>${dd}</b><br>MIMIC-III ${a.toFixed(1)}% of planned admissions<br>MIMIC-IV ${b.toFixed(1)}%`);
+      });
+      const lg = S("g", { transform: `translate(${left + 8}, 14)` }, svg);
+      S("rect", { x: 0, y: 0, width: 14, height: 14, fill: "var(--ink)" }, lg); T(lg, 20, 12, "MIMIC-III: weekday kept", { fill: "var(--ink)" });
+      S("rect", { x: 210, y: 0, width: 14, height: 14, fill: "var(--line)", stroke: "var(--ink)" }, lg); T(lg, 230, 12, "MIMIC-IV: weekday hidden", { fill: "var(--ink)" });
+      fig.querySelector(".plot").appendChild(svg); animateMarks(svg);
+    })();
+
+    // ---------- real: odds ratios
+    (function () {
+      const fig = $("#f-or"), st = { adj: "adj" };
+      fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
+      function draw() {
+        const E = R.real.effects, W = 560, rowH = 50, top = 16, left = 150, right = 70, Hh = top + rowH * E.length + 40;
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Real odds ratios before and after adjustment" });
+        const lx = scale(Math.log(0.75), Math.log(1.45), left, W - right), x = v => lx(Math.log(v));
+        [0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4].forEach(t => { S("line", { x1: x(t), x2: x(t), y1: top - 6, y2: Hh - 34, stroke: t === 1 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 1 ? "4 3" : null }, svg); T(svg, x(t), Hh - 18, t.toFixed(1), { "text-anchor": "middle" }); });
+        T(svg, (left + W - right) / 2, Hh - 2, "Odds ratio for dying in hospital (log scale)", { "text-anchor": "middle", "font-size": 12 });
+        E.forEach((e, k) => {
+          const yy = top + rowH * k + rowH / 2, v = st.adj === "adj" ? e.adj : e.raw, g = S("g", {}, svg);
+          T(svg, left - 10, yy + 4, e.label, { "text-anchor": "end", fill: "var(--ink)", "font-size": 12.5 });
+          S("line", { x1: x(e.raw[0]), x2: x(v[0]), y1: yy, y2: yy, stroke: "var(--line)", "stroke-width": 2, "stroke-dasharray": "3 3" }, g);
+          S("line", { x1: x(v[1]), x2: x(v[2]), y1: yy, y2: yy, stroke: "var(--ink)", "stroke-width": 2.4 }, g);
+          S("circle", { cx: x(v[0]), cy: yy, r: 8, fill: st.adj === "adj" ? "var(--accent)" : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.8 }, g);
+          T(svg, W - right + 8, yy + 4, `${e.raw[0].toFixed(2)} → ${e.adj[0].toFixed(2)}`, { fill: "var(--ink)", "font-size": 12, "font-weight": 600 });
+          tip(g, () => `<b>${e.data}</b><br>${e.exposure}<br>Died: ${e.died[0]}% vs ${e.died[1]}%<br>Age and sex only: OR ${e.raw[0].toFixed(2)} (${e.raw[1].toFixed(2)}–${e.raw[2].toFixed(2)})<br>+ ${e.adj_what}: OR ${e.adj[0].toFixed(2)} (${e.adj[1].toFixed(2)}–${e.adj[2].toFixed(2)})`);
+        });
+        const plot = fig.querySelector(".plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+      }
+      draw();
+    })();
+
+    // ---------- statistics tables
+    const tb = R.tests.base, nm = repo.length;
+    const cnt = (o, f) => repo.filter(m => o[m] && f(o[m])).length;
+    const sb = R.summary["synthetic|base"], mb = R.summary["mimic|base"];
+    const rank1 = (o) => repo.filter(m => o[m].rank === 1).map(m => lab[m]).join(", ");
+    const H8 = R.cross["synthetic|base"].H8_p, H9 = R.cross["synthetic|base"].H9_p;
+    const testRows = [
+      ["H1", "Does the day matter at all?", "Friedman test over the 7 days; Kendall's W for size", `${cnt(tb, t => t.friedman_p < 0.05)} of ${nm} models; W ${Math.min(...repo.map(m => tb[m].kendall_w)).toFixed(2)}–${Math.max(...repo.map(m => tb[m].kendall_w)).toFixed(2)}`, "needs one more cluster run"],
+      ["H2", "Is weekend risk different from weekday risk, same patient?", "Wilcoxon signed-rank on per-patient shifts, Holm across 11 models", `${cnt(sb, d => d.sig)} of ${nm} (${cnt(sb, d => d.sig && d.shift > 0)} up, ${cnt(sb, d => d.sig && d.shift < 0)} down)`, `${cnt(mb, d => d.sig)} of ${nm} (${cnt(mb, d => d.sig && d.shift > 0)} up, ${cnt(mb, d => d.sig && d.shift < 0)} down)`],
+      ["H3", "Is the weekend special?", "Rank of Sat + Sun among all 21 pairs of days", "rank 1: " + rank1(sb), "rank 1: " + rank1(mb)],
+      ["H4", "Placebo: do Tuesday and Wednesday differ?", "Wilcoxon on Tue − Wed (should be zero)", `nonzero in ${cnt(tb, t => t.placebo_p < 0.05)} of ${nm} (uncorrected), small`, "values only"],
+      ["H5", "Does naming any day change risk?", "Average of 7 days − no-day version", `yes in ${cnt(tb, t => t.noday_p < 0.05)} of ${nm}`, "values only (chart above)"],
+      ["H6", "Does the ICU decision change at weekends?", "Exact McNemar test, Holm", `significant in ${cnt(tb, t => t.icu_p_holm < 0.05)} of ${nm}`, "flips 0–3.5%"],
+      ["H7", "Bigger for some conditions or severities?", "Kruskal–Wallis", `condition: ${cnt(tb, t => t.kw_condition_p < 0.05)} of ${nm}; severity: ${cnt(tb, t => t.kw_severity_p < 0.05)} of ${nm}`, "needs one more cluster run"],
+      ["H8", "Do models differ from each other?", "Friedman across models, same patients", `yes, p = ${H8.toExponential(0)}`, "needs one more cluster run"],
+      ["H9", "Do models differ in how often answers swing 10+ points?", "Cochran's Q", `yes, p = ${H9.toExponential(0)}`, "needs one more cluster run"],
+      ["H10", "Does the fairness sentence shrink each patient's shift?", "Wilcoxon on shift(usual) − shift(fair), Holm", `only ${repo.filter(m => R.mitigation[m] && R.mitigation[m].p_holm < 0.05).map(m => lab[m]).join(", ") || "none"}`, "significance drops in 2 models"],
+      ["C1", "Sanity check: sicker cases get higher risk?", "Spearman, severity vs no-day risk", `yes for all; ρ ${Math.min(...repo.map(m => tb[m].c1_rho)).toFixed(2)}–${Math.max(...repo.map(m => tb[m].c1_rho)).toFixed(2)}`, "AUROC 0.67–0.92"]];
+    $("#testTable").innerHTML = `<thead><tr><th>Test</th><th>Question</th><th>Method</th><th>Synthetic patients</th><th>Real patients</th></tr></thead><tbody>` +
+      testRows.map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join("") + "</tbody>";
+    function detail(p) {
+      const t = R.tests[p], s = R.summary["synthetic|" + p];
+      $("#detailTable").innerHTML = `<thead><tr><th>Model</th><th class="r">Shift</th><th class="r">Holm p</th><th class="r">Rank /21</th><th class="r">Kendall W</th><th class="r">Placebo</th><th class="r">Named vs no day</th><th class="r">ICU flips</th><th class="r">Swing ≥10</th><th class="r">Severity ρ</th></tr></thead><tbody>` +
+        repo.map(m => `<tr><td>${lab[m]}</td><td class="r">${sgn(s[m].shift)}</td><td class="r">${pfmt(t[m].wilcoxon_p_holm)}</td><td class="r">${s[m].rank}</td><td class="r">${t[m].kendall_w.toFixed(3)}</td><td class="r">${sgn(t[m].placebo)}</td><td class="r">${sgn(t[m].noday)}</td><td class="r">${pct(t[m].icu_flip)}</td><td class="r">${pct(t[m].swing10)}</td><td class="r">${t[m].c1_rho === null ? "–" : t[m].c1_rho.toFixed(2)}</td></tr>`).join("") + "</tbody>";
+    }
+    detail(seg($("#detailPrompt"), detail));
+
+    const G = [["Weekend shift", "For one patient: average predicted risk on Saturday and Sunday minus the average on Monday to Friday. Reported as the average over patients, in points on the 0–100 scale."],
+      ["Wilcoxon signed-rank test", "Asks whether the per-patient shifts are centred on zero. It uses only the direction and rank of each change, so a few huge swings cannot dominate."],
+      ["Holm correction", "We test 11 models at once, so some would look significant by luck. Holm raises the bar step by step so that the chance of any false alarm stays at 5%."],
+      ["95% confidence interval", "The range of plausible average shifts, found by resampling the patients 10,000 times (bootstrap). An interval that crosses zero is consistent with no shift."],
+      ["Rank among 21 day pairs", "There are 21 ways to pick two days of the week. We compute the same shift for each pair; rank 1 means Saturday + Sunday moves the risk more than any other pair."],
+      ["Placebo", "A comparison that should show nothing (Tuesday vs Wednesday). If it moves too, part of the effect is general sensitivity to day words."],
+      ["Odds ratio", "How much the odds of dying change with the exposure. 1 = no change; 1.31 = 31% higher odds."],
+      ["Implied odds ratio", "The odds ratio you get from a model's weekday and weekend risk for the same patient. It lets us put model shifts on the same scale as real hospital data."],
+      ["AUROC", "Pick one patient who died and one who survived at random; AUROC is the chance the model gives the higher risk to the one who died. 0.5 = coin flip, 1 = perfect."],
+      ["Brier score", "Average squared error of the predicted probability against what happened. Lower is better."],
+      ["Kendall's W", "Effect size for the day-of-week test: 0 = days make no difference, 1 = days fully determine the ranking."],
+      ["Greedy, JSON-constrained decoding", "The model always picks its most likely next word, and the decoder only allows a valid JSON answer. Same input, same output, no unusable replies."],
+      ["APACHE IVa", "A standard ICU severity score built from the worst values in the first 24 hours. We used its predicted risk of death to adjust for how sick patients were."],
+      ["MIMIC-III, MIMIC-IV, eICU-CRD", "De-identified US hospital databases on PhysioNet. MIMIC comes from one Boston hospital; eICU covers 208 hospitals. Access requires training and a data use agreement."]];
+    $("#glossary").innerHTML = G.map(g => `<details><summary>${g[0]}</summary><p>${g[1]}</p></details>`).join("");
+
+    $("#modelTable").innerHTML = `<thead><tr><th>Model</th><th>Kind</th><th>Trained from</th><th class="r">Size</th><th>Weights</th><th class="r">AUROC (real)</th><th class="r">Shift, real</th><th class="r">Shift, synthetic</th></tr></thead><tbody>` +
+      M.map(m => `<tr><td><b>${m.label}</b><br><span style="font-size:12.5px;color:var(--muted)">${m.repo}</span></td><td>${m.kind}</td><td>${m.base || "–"}</td><td class="r">${m.params}B</td><td>${m.precision}</td><td class="r">${R.calib[m.repo].auroc.toFixed(2)}</td><td class="r">${sgn(mb[m.repo].shift)}${mb[m.repo].sig ? " *" : ""}</td><td class="r">${sgn(sb[m.repo].shift)}${sb[m.repo].sig ? " *" : ""}</td></tr>`).join("") +
+      `</tbody><caption style="caption-side:bottom;text-align:left;padding-top:8px;color:var(--muted);font-size:13.5px">* significant after Holm correction. Still running: ${R.meta.pending.join(", ")}.</caption>`;
+
+    // copy email
+    $("#copyMail").addEventListener("click", () => {
+      const b = $("#copyMail"), t = $("#mailText").textContent;
+      const done = ok => { b.textContent = ok ? "Copied" : "Select it"; setTimeout(() => b.textContent = "Copy", 1600); };
+      try { navigator.clipboard.writeText(t).then(() => done(true), () => { selectText(); done(false); }); } catch (e) { selectText(); done(false); }
+      function selectText() { const r = document.createRange(); r.selectNodeContents($("#mailText")); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
