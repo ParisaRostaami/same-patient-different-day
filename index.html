@@ -279,7 +279,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
     <div class="holes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="tag">POSTER · ROCKY MOUNTAIN WORKSHOP ON TRUSTWORTHY &amp; RESPONSIBLE AI · CU BOULDER · NOV 4, 2026</div>
     <h1>Same Patient, <span>Different Day.</span></h1>
-    <p class="lede">We gave 11 language models the same emergency patients again and again, changing only the day of admission. If a model raises the risk of death because it is Saturday, it is applying the hospital "weekend effect" to someone it already knows everything about.</p>
+    <p class="lede">We gave 13 language models the same emergency patients again and again, changing only the day of admission. If a model raises the risk of death because it is Saturday, it is applying the hospital "weekend effect" to someone it already knows everything about.</p>
     <div class="flipbox" id="flipbox"><span>Admitted on a</span><span class="flap" id="flapDay"><span>Sunday</span></span><span>morning: predicted risk of death</span><span class="flap" id="flapRisk"><span>80%</span></span></div>
     <p class="fl-cap">The same 71-year-old woman with a pulmonary embolism, asked to Llama-3-8B. Only the day changes.</p>
     <div class="who"><b>Parisa Rostami</b><span>Computer Science, Wichita State University</span><a href="#about">Contact and links</a></div>
@@ -312,8 +312,8 @@ svg .a-line { animation: draw 1.2s ease-out; }
       <div class="card"><div class="eyebrow">The exact prompt</div><div id="promptText"></div></div>
       <div class="card"><div class="eyebrow">What we measure</div>
         <p style="margin-top:10px"><b>Weekend shift</b> for one patient = average predicted risk on Saturday and Sunday − average on Monday to Friday. Zero is fair. A positive shift means the model raises that patient's risk at weekends.</p>
-        <p style="margin-top:10px">We test whether shifts differ from zero across patients (Wilcoxon signed-rank test, Holm-corrected for 11 models), check a placebo that should be zero (Tuesday vs Wednesday), and ask whether the weekend is special or every pair of days moves this much (rank among all 21 pairs of days).</p>
-        <p style="margin-top:10px">Decoding is greedy and the answer format is forced, so the same input always gives the same output. 123,200 answers, none unusable.</p>
+        <p style="margin-top:10px">We test whether shifts differ from zero across patients (Wilcoxon signed-rank test, Holm-corrected for 13 models), check a placebo that should be zero (Tuesday vs Wednesday), and ask whether the weekend is special or every pair of days moves this much (rank among all 21 pairs of days).</p>
+        <p style="margin-top:10px">Decoding is greedy and the answer format is forced, so the same input always gives the same output. 145,600 answers, none unusable.</p>
       </div>
     </div>
   </div>
@@ -338,13 +338,13 @@ svg .a-line { animation: draw 1.2s ease-out; }
         <p id="exSummary" style="margin-top:10px;font-size:15.5px"></p>
       </div>
     </div>
-    <div class="card" style="margin-top:18px"><div class="eyebrow">All 11 models, this patient (predicted risk %, ICU yes in bold)</div><div class="matrix" id="exMatrix"></div></div>
+    <div class="card" style="margin-top:18px"><div class="eyebrow">All 13 models, this patient (predicted risk %, ICU yes in bold)</div><div class="matrix" id="exMatrix"></div></div>
   </div>
 </section>
 
 <section class="block" id="findings">
   <div class="wrap">
-    <div class="sec-head"><div class="daybox"><i></i><span>THU</span><b>5</b></div><h2>What we found</h2><p>Twelve findings from the cluster run (Oct 31, 2026). Large models (70B) are still running and will be added.</p></div>
+    <div class="sec-head"><div class="daybox"><i></i><span>THU</span><b>5</b></div><h2>What we found</h2><p>Twelve findings from 13 models, 0.5B to 72B parameters (cluster run, Oct 31, 2026).</p></div>
     <div class="grid3" id="findingList"></div>
     <h3 style="font-size:30px;margin:44px 0 14px">Things that surprised us</h3>
     <div class="grid4" id="factList"></div>
@@ -356,12 +356,12 @@ svg .a-line { animation: draw 1.2s ease-out; }
     <div class="sec-head"><div class="daybox"><i></i><span>FRI</span><b>6</b></div><h2>The results, chart by chart</h2><p>Every chart is interactive: hover or tap a mark for its numbers, and use the buttons to switch between real and synthetic patients or between the two prompts.</p></div>
 
     <figure class="fig" id="f-forest">
-      <h3>7 of 11 models move the same real patient at weekends</h3>
-      <p class="sub">Average weekend shift per model with its 95% confidence interval. Filled = significant after correcting for 11 tests; hollow = not.</p>
+      <h3>9 of 13 models move the same real patient at weekends</h3>
+      <p class="sub">Average weekend shift per model with its 95% confidence interval. Filled = significant after correcting for 13 tests; hollow = not.</p>
       <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="both" aria-pressed="true">Both</button><button type="button" data-v="mimic" aria-pressed="false">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span>
       <span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
       <div class="plot"></div>
-      <p class="read"><b>How to read it.</b> A dot right of zero means the model gives the same patient a higher risk on Saturday and Sunday. Real patients: 5 models go up, 2 go down. The shifts are small on average, but the next charts show why averages hide the story.</p>
+      <p class="read"><b>How to read it.</b> A dot right of zero means the model gives the same patient a higher risk on Saturday and Sunday. Real patients: 7 models go up, 2 go down, including both 70B-class models going up. The shifts are small on average, but the next charts show why averages hide the story.</p>
     </figure>
 
     <figure class="fig" id="f-flips">
@@ -395,23 +395,23 @@ svg .a-line { animation: draw 1.2s ease-out; }
       <p class="sub">Average weekend shift for each model and condition (synthetic patients, 30 per condition).</p>
       <div class="controls"><span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
       <div class="plot tablewrap"></div>
-      <p class="read"><b>How to read it.</b> Warm cells raise weekend risk, cool cells lower it. Averaged over models, hip fracture (+0.59) and NSTEMI (+0.57) move most. The tiny Qwen2.5-0.5B adds +7.7 points for pneumonia; BioMistral takes 5.2 away.</p>
+      <p class="read"><b>How to read it.</b> Warm cells raise weekend risk, cool cells lower it. Averaged over models, hip fracture (+0.58) and NSTEMI (+0.48) move most. The tiny Qwen2.5-0.5B adds +7.7 points for pneumonia; BioMistral takes 5.2 away.</p>
     </figure>
 
     <div class="grid2">
       <figure class="fig" id="f-scale">
         <h3>Bigger is better at medicine, not at ignoring the day</h3>
-        <p class="sub">Qwen2.5 from 0.5B to 32B parameters. Numbers on top: how well each ranks real deaths (AUROC).</p>
+        <p class="sub">Qwen2.5 from 0.5B to 72B parameters. Numbers on top: how well each ranks real deaths (AUROC).</p>
         <div class="controls"><span class="seg" data-ctl="pr"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
         <div class="plot"></div>
-        <p class="read"><b>How to read it.</b> AUROC climbs from 0.67 to 0.92, but the weekend shift never reaches zero. The 32B model still adds +0.64 points on real patients.</p>
+        <p class="read"><b>How to read it.</b> AUROC climbs from 0.67 to 0.92, but on real patients the weekend shift never reaches zero: the 32B model adds +0.64 points and the 72B model still adds +0.28.</p>
       </figure>
       <figure class="fig" id="f-fix">
-        <h3>Telling the model to ignore the day barely helps</h3>
+        <h3>Telling the model to ignore the day helps only some models</h3>
         <p class="sub">Each arrow goes from the usual prompt to the prompt with the fairness sentence.</p>
         <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="mimic" aria-pressed="true">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span></div>
         <div class="plot"></div>
-        <p class="read"><b>How to read it.</b> On real patients the shift disappears for Qwen2.5-1.5B and 3B, but 4 models stay shifted, including the two largest. On synthetic patients no working model improves significantly.</p>
+        <p class="read"><b>How to read it.</b> On real patients the shift disappears for Qwen2.5-1.5B, 3B and 72B and for BioMistral, but 5 models stay shifted, including Qwen2.5-32B and Llama-3.3-70B. On synthetic patients no working model improves significantly.</p>
       </figure>
     </div>
 
@@ -428,7 +428,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
         <h3>How good are the models at the clinical part?</h3>
         <p class="sub">400 real patients, 100 of whom died. Bars: AUROC (0.5 = coin flip). Dots: average predicted risk against the real 25%.</p>
         <div class="plot"></div>
-        <p class="read"><b>How to read it.</b> Qwen2.5-14B and 32B rank deaths best and are close to the real 25%. Qwen2.5-1.5B says 73% on average. OpenBioLLM answers about 50% for almost everyone.</p>
+        <p class="read"><b>How to read it.</b> Qwen2.5-72B, 14B and 32B and Llama-3.3-70B rank deaths best (AUROC 0.91–0.92), and their average predictions (22–31%) are close to the real 25%. Qwen2.5-1.5B says 73% on average. OpenBioLLM answers about 50% for almost everyone.</p>
       </figure>
     </div>
   </div>
@@ -472,7 +472,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
 
 <section class="block" id="models">
   <div class="wrap">
-    <div class="sec-head"><div class="daybox"><i></i><span>NOTES</span><b>+</b></div><h2>The 11 models</h2><p>Open models run on one A30 GPU with vLLM. Medical fine-tunes are listed with the general model they were trained from.</p></div>
+    <div class="sec-head"><div class="daybox"><i></i><span>NOTES</span><b>+</b></div><h2>The 13 models</h2><p>Open models run with vLLM on A30 GPUs (the 70B-class models on four). Medical fine-tunes are listed with the general model they were trained from.</p></div>
     <div class="tablewrap"><table class="data" id="modelTable"></table></div>
   </div>
 </section>
@@ -489,13 +489,13 @@ svg .a-line { animation: draw 1.2s ease-out; }
       <div class="card"><div class="eyebrow">Limits</div>
         <ul style="margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:15.5px">
           <li>Short case vignettes, one wording of the day and one answer format.</li>
-          <li>Greedy decoding (one answer per prompt). Qwen2.5-14B and 32B ran in 4-bit.</li>
+          <li>Greedy decoding (one answer per prompt). Qwen2.5-14B, 32B and 72B and Llama-3.3-70B ran in 4-bit.</li>
           <li>Absolute risks are poorly calibrated, so only shifts within the same patient are interpreted.</li>
           <li>Real-world effects are observational; APACHE uses the first 24 hours in the ICU and may absorb some early differences in care.</li>
         </ul></div>
       <div class="card"><div class="eyebrow">Coming next</div>
         <ul style="margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:15.5px">
-          <li>70B-class models (Qwen2.5-72B, Llama-3.3-70B): queued; this page will be updated.</li>
+          <li>Where is the weekend? The same patients in Boston, Tehran, Tel Aviv and Riyadh, whose weekends fall on different days (running now).</li>
           <li>TwinDay benchmark: clock time, holidays, the July effect, bare dates, staffing, race × day.</li>
           <li>Reasoning models, and where the shift lives inside the model.</li>
           <li>Other prompt wordings, and a fine-tuning fix that teaches models to ignore the day.</li>
@@ -616,7 +616,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
     const daySentence = (c, v) => v === "none" ? `${c.pron} is admitted to the hospital in the morning.` : `${c.pron} is admitted to the hospital on a ${v} morning.`;
 
     // hero stats
-    const hs = [["123,200", "answers from the models"], ["11", "open language models"], ["700", "patients: 300 synthetic, 400 real"], ["8", "versions of each patient"], ["0", "unusable answers"]];
+    const hs = [["145,600", "answers from the models"], ["13", "open language models"], ["700", "patients: 300 synthetic, 400 real"], ["8", "versions of each patient"], ["0", "unusable answers"]];
     $("#heroStats").innerHTML = hs.map(([a, b]) => `<div><b class="num">${a}</b><span>${b}</span></div>`).join("");
     if (!RM) $("#heroStats").querySelectorAll("b").forEach(b => {
       const fin = b.textContent, target = +fin.replace(/,/g, ""); if (!target) return;
@@ -773,15 +773,15 @@ svg .a-line { animation: draw 1.2s ease-out; }
 
     // ---------- findings + facts
     const F = [
-      ["Every model reacts to the day name.", "All 11 give different risks on different days more often than chance (Friedman test). The effect per answer is tiny (Kendall's W 0.01–0.08)."],
-      ["7 of 11 models shift real patients at weekends.", "Five raise weekend risk (Qwen2.5 0.5B, 1.5B, 3B, 14B, 32B) and two lower it (Qwen2.5-7B, BioMistral), after correcting for 11 tests. Synthetic patients: 6 of 11."],
+      ["Every model reacts to the day name.", "All 13 give different risks on different days more often than chance (Friedman test). The effect per answer is tiny (Kendall's W 0.01–0.08)."],
+      ["9 of 13 models shift real patients at weekends.", "Seven raise weekend risk (Qwen2.5 0.5B, 1.5B, 3B, 14B, 32B, 72B and Llama-3.3-70B) and two lower it (Qwen2.5-7B, BioMistral), after correcting for 13 tests. Synthetic patients: 5 of 13."],
       ["The average shift is small.", "−0.8 to +3.9 points on a 0–100 scale, because 79–97% of patients get exactly the same answer on all seven days."],
       ["When an answer changes, it jumps.", "About two-thirds of the synthetic patients who move swing 10 points or more. The largest single swing is 90 points."],
-      ["Direction belongs to the model.", "Qwen2.5-7B lowers weekend risk while its smaller and larger siblings raise it. The 11 models differ far beyond chance (p = 1 × 10⁻¹⁹)."],
+      ["Direction belongs to the model.", "Qwen2.5-7B lowers weekend risk while its smaller and larger siblings raise it. The 13 models differ far beyond chance (p = 5 × 10⁻¹⁹)."],
       ["Just naming a day changes risk.", "Compared with no day, Med42 adds 2.1 points and OpenBioLLM 1.9 on synthetic patients; Qwen2.5-0.5B drops 4.9 on real ones."],
-      ["Bigger is not cleaner.", "Qwen2.5-32B ranks real deaths well (AUROC 0.91) yet adds +0.64 points at weekends, and the weekend is its most different of 21 day pairs."],
+      ["Bigger is not cleaner.", "Qwen2.5-72B ranks real deaths best of all 13 (AUROC 0.92) yet still adds +0.28 points at weekends; Llama-3.3-70B adds +0.31. Qwen2.5-32B adds +0.64, and the weekend is its most different of 21 day pairs."],
       ["Medical training does not fix it.", "BioMistral shifts the opposite way from its base Mistral. OpenBioLLM answers about 50% for almost everyone."],
-      ["Asking politely barely helps.", "With a sentence saying the day is not clinical information, 2 models stop shifting on real patients and 4 stay shifted, including the two largest."],
+      ["Asking politely helps only some models.", "With a sentence saying the day is not clinical information, 4 models stop shifting on real patients (Qwen2.5-1.5B, 3B, 72B, BioMistral) and 5 stay shifted, including Llama-3.3-70B."],
       ["ICU decisions hardly move.", "0–3.5% of patients flip between ICU yes and no with the weekend."],
       ["Real gaps are mostly case mix.", "Real weekend and night death gaps (odds ratio up to 1.31) mostly vanish after adjusting for unit, admission source and severity: eICU night 1.31 → 0.96."],
       ["MIMIC-IV hides the real weekday.", "Its planned admissions do not dip at weekends, so its weekend effect cannot be measured; MIMIC-III keeps real weekdays."]];
@@ -791,9 +791,9 @@ svg .a-line { animation: draw 1.2s ease-out; }
       ["7.8 → 13.6%", "Qwen2.5-0.5B's average risk for the same 400 real patients, Monday versus Sunday."],
       ["21 of 21", "Med42's weekend is the least different of all 21 pairs of days on real patients. With Llama-3-8B, it is one of the two cleanest models."],
       ["50%", "OpenBioLLM's answer for 2,395 of 2,400 synthetic prompts once it is told to ignore the day."],
-      ["28.9%", "of MIMIC-IV's planned admissions fall on weekends, which is impossible in a real hospital and reveals its shifted dates."],
+      ["0.92 and +0.28", "Qwen2.5-72B: the best AUROC for real deaths of all 13 models, and still a weekend shift for the same real patients."],
       ["12.6% vs 10.2%", "APACHE-predicted risk of night versus daytime ICU patients in eICU. Sicker patients arrive at night."],
-      ["0", "unusable answers out of 123,200, because the decoder forced valid JSON."]];
+      ["0", "unusable answers out of 145,600, because the decoder forced valid JSON."]];
     $("#factList").innerHTML = facts.map(f => `<div class="fact"><b class="num">${f[0]}</b><p>${f[1]}</p></div>`).join("");
 
     // ---------- chart: forest
@@ -972,15 +972,15 @@ svg .a-line { animation: draw 1.2s ease-out; }
     (function () {
       const fig = $("#f-scale"), st = { pr: "base" };
       fig.querySelectorAll(".seg").forEach(sg => { st[sg.dataset.ctl] = seg(sg, v => { st[sg.dataset.ctl] = v; draw(); }); });
-      const Q = repo.slice(0, 6), size = M.slice(0, 6).map(m => m.params);
+      const QM = M.filter(m => m.family === "Qwen2.5").sort((a, b) => a.params - b.params), Q = QM.map(m => m.repo), size = QM.map(m => m.params);
       function draw() {
         const W = 560, Hh = 380, left = 50, right = 20, top = 64, bottom = 44;
         const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Weekend shift across Qwen2.5 sizes" });
-        const lx = scale(Math.log(0.4), Math.log(40), left, W - right), x = v => lx(Math.log(v));
+        const lx = scale(Math.log(0.4), Math.log(95), left, W - right), x = v => lx(Math.log(v));
         const y = scale(-1.5, 6, Hh - bottom, top);
         [-1, 0, 1, 2, 3, 4, 5, 6].forEach(t => { S("line", { x1: left, x2: W - right, y1: y(t), y2: y(t), stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); T(svg, left - 8, y(t) + 4, (t > 0 ? "+" : t < 0 ? "−" : "") + Math.abs(t), { "text-anchor": "end" }); });
         T(svg, left, 18, "AUROC for real deaths", { "font-size": 12 });
-        Q.forEach((m, k) => { T(svg, x(size[k]), 40, R.calib[m].auroc.toFixed(2), { "text-anchor": "middle", fill: "var(--ink)", "font-weight": 600 }); T(svg, x(size[k]), Hh - 20, M[k].label.replace("Qwen2.5-", ""), { "text-anchor": "middle" }); });
+        Q.forEach((m, k) => { T(svg, x(size[k]), 40, R.calib[m].auroc.toFixed(2), { "text-anchor": "middle", fill: "var(--ink)", "font-weight": 600 }); T(svg, x(size[k]), Hh - 20, QM[k].label.replace("Qwen2.5-", ""), { "text-anchor": "middle" }); });
         T(svg, (left + W - right) / 2, Hh - 2, "Qwen2.5 model size", { "text-anchor": "middle", "font-size": 12 });
         [["synthetic", "var(--accent2)", "rect"], ["mimic", "var(--accent)", "circle"]].forEach(([ds, col, shape]) => {
           const d = Q.map(m => R.summary[ds + "|" + st.pr][m]);
@@ -991,7 +991,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
             const g = S("g", {}, svg);
             if (shape === "circle") S("circle", { cx: x(size[k]), cy: y(v.shift), r: 7, fill: col, stroke: "var(--ink)", "stroke-width": 1.8 }, g);
             else S("rect", { class: "a-sq", x: x(size[k]) - 6, y: y(v.shift) - 6, width: 12, height: 12, fill: col, stroke: "var(--ink)", "stroke-width": 1.8 }, g);
-            tip(g, () => `<b>${M[k].label}</b> · ${ds === "mimic" ? "real" : "synthetic"} patients<br>Shift ${sgn(v.shift)} (${sgn(v.lo)} to ${sgn(v.hi)})<br>AUROC ${R.calib[Q[k]].auroc.toFixed(3)}`);
+            tip(g, () => `<b>${QM[k].label}</b> · ${ds === "mimic" ? "real" : "synthetic"} patients<br>Shift ${sgn(v.shift)} (${sgn(v.lo)} to ${sgn(v.hi)})<br>AUROC ${R.calib[Q[k]].auroc.toFixed(3)}`);
           });
         });
         const lg = S("g", { transform: `translate(${W - right - 150}, ${top + 20})` }, svg);
@@ -1132,7 +1132,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
     const H8 = R.cross["synthetic|base"].H8_p, H9 = R.cross["synthetic|base"].H9_p;
     const testRows = [
       ["H1", "Does the day matter at all?", "Friedman test over the 7 days; Kendall's W for size", `${cnt(tb, t => t.friedman_p < 0.05)} of ${nm} models; W ${Math.min(...repo.map(m => tb[m].kendall_w)).toFixed(2)}–${Math.max(...repo.map(m => tb[m].kendall_w)).toFixed(2)}`, "needs one more cluster run"],
-      ["H2", "Is weekend risk different from weekday risk, same patient?", "Wilcoxon signed-rank on per-patient shifts, Holm across 11 models", `${cnt(sb, d => d.sig)} of ${nm} (${cnt(sb, d => d.sig && d.shift > 0)} up, ${cnt(sb, d => d.sig && d.shift < 0)} down)`, `${cnt(mb, d => d.sig)} of ${nm} (${cnt(mb, d => d.sig && d.shift > 0)} up, ${cnt(mb, d => d.sig && d.shift < 0)} down)`],
+      ["H2", "Is weekend risk different from weekday risk, same patient?", "Wilcoxon signed-rank on per-patient shifts, Holm across 13 models", `${cnt(sb, d => d.sig)} of ${nm} (${cnt(sb, d => d.sig && d.shift > 0)} up, ${cnt(sb, d => d.sig && d.shift < 0)} down)`, `${cnt(mb, d => d.sig)} of ${nm} (${cnt(mb, d => d.sig && d.shift > 0)} up, ${cnt(mb, d => d.sig && d.shift < 0)} down)`],
       ["H3", "Is the weekend special?", "Rank of Sat + Sun among all 21 pairs of days", "rank 1: " + rank1(sb), "rank 1: " + rank1(mb)],
       ["H4", "Placebo: do Tuesday and Wednesday differ?", "Wilcoxon on Tue − Wed (should be zero)", `nonzero in ${cnt(tb, t => t.placebo_p < 0.05)} of ${nm} (uncorrected), small`, "values only"],
       ["H5", "Does naming any day change risk?", "Average of 7 days − no-day version", `yes in ${cnt(tb, t => t.noday_p < 0.05)} of ${nm}`, "values only (chart above)"],
@@ -1153,7 +1153,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
 
     const G = [["Weekend shift", "For one patient: average predicted risk on Saturday and Sunday minus the average on Monday to Friday. Reported as the average over patients, in points on the 0–100 scale."],
       ["Wilcoxon signed-rank test", "Asks whether the per-patient shifts are centred on zero. It uses only the direction and rank of each change, so a few huge swings cannot dominate."],
-      ["Holm correction", "We test 11 models at once, so some would look significant by luck. Holm raises the bar step by step so that the chance of any false alarm stays at 5%."],
+      ["Holm correction", "We test 13 models at once, so some would look significant by luck. Holm raises the bar step by step so that the chance of any false alarm stays at 5%."],
       ["95% confidence interval", "The range of plausible average shifts, found by resampling the patients 10,000 times (bootstrap). An interval that crosses zero is consistent with no shift."],
       ["Rank among 21 day pairs", "There are 21 ways to pick two days of the week. We compute the same shift for each pair; rank 1 means Saturday + Sunday moves the risk more than any other pair."],
       ["Placebo", "A comparison that should show nothing (Tuesday vs Wednesday). If it moves too, part of the effect is general sensitivity to day words."],
@@ -1169,7 +1169,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
 
     $("#modelTable").innerHTML = `<thead><tr><th>Model</th><th>Kind</th><th>Trained from</th><th class="r">Size</th><th>Weights</th><th class="r">AUROC (real)</th><th class="r">Shift, real</th><th class="r">Shift, synthetic</th></tr></thead><tbody>` +
       M.map(m => `<tr><td><b>${m.label}</b><br><span style="font-size:12.5px;color:var(--muted)">${m.repo}</span></td><td>${m.kind}</td><td>${m.base || "–"}</td><td class="r">${m.params}B</td><td>${m.precision}</td><td class="r">${R.calib[m.repo].auroc.toFixed(2)}</td><td class="r">${sgn(mb[m.repo].shift)}${mb[m.repo].sig ? " *" : ""}</td><td class="r">${sgn(sb[m.repo].shift)}${sb[m.repo].sig ? " *" : ""}</td></tr>`).join("") +
-      `</tbody><caption style="caption-side:bottom;text-align:left;padding-top:8px;color:var(--muted);font-size:13.5px">* significant after Holm correction. Still running: ${R.meta.pending.join(", ")}.</caption>`;
+      `</tbody><caption style="caption-side:bottom;text-align:left;padding-top:8px;color:var(--muted);font-size:13.5px">* significant after Holm correction.${R.meta.pending.length ? " Still running: " + R.meta.pending.join(", ") + "." : ""}</caption>`;
 
     // copy email
     $("#copyMail").addEventListener("click", () => {
