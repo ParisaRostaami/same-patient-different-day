@@ -460,10 +460,10 @@ svg .a-line { animation: draw 1.2s ease-out; }
 
 <section class="block" id="stats">
   <div class="wrap">
-    <div class="sec-head"><div class="daybox"><i></i><span>NOTES</span><b>+</b></div><h2>Every statistical test, in plain words</h2><p>Eleven tests per model, run on the synthetic patients; the real-patient column shows what we have so far.</p></div>
+    <div class="sec-head"><div class="daybox"><i></i><span>NOTES</span><b>+</b></div><h2>Every statistical test, in plain words</h2><p>Eleven tests per model, run on both the 300 synthetic and the 400 real patients, plus one that only real patients allow: does the shift differ for patients who later died?</p></div>
     <div class="tablewrap"><table class="data" id="testTable"></table></div>
     <h3 style="font-size:26px;margin:34px 0 12px">Per-model detail</h3>
-    <div class="controls"><span class="seg" id="detailPrompt"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
+    <div class="controls"><span class="seg" id="detailDs"><button type="button" data-v="synthetic" aria-pressed="true">Synthetic patients</button><button type="button" data-v="mimic" aria-pressed="false">Real patients</button></span><span class="seg" id="detailPrompt"><button type="button" data-v="base" aria-pressed="true">Usual prompt</button><button type="button" data-v="fair" aria-pressed="false">+ fairness sentence</button></span></div>
     <div class="tablewrap"><table class="data" id="detailTable"></table></div>
     <h3 style="font-size:26px;margin:34px 0 12px">Words used on this page</h3>
     <div id="glossary"></div>
@@ -1125,31 +1125,38 @@ svg .a-line { animation: draw 1.2s ease-out; }
     })();
 
     // ---------- statistics tables
-    const tb = R.tests.base, nm = repo.length;
+    const tb = R.tests.base, tr = R.tests_real.base, nm = repo.length;
+    const mn = v => v.replace("-", "−");
+    const rng = (o, k, d = 2) => `${mn(Math.min(...repo.map(m => o[m][k])).toFixed(d))} to ${mn(Math.max(...repo.map(m => o[m][k])).toFixed(d))}`;
+    const named = (o, f) => repo.filter(m => o[m] && f(o[m])).map(m => lab[m]).join(", ") || "none";
     const cnt = (o, f) => repo.filter(m => o[m] && f(o[m])).length;
     const sb = R.summary["synthetic|base"], mb = R.summary["mimic|base"];
     const rank1 = (o) => repo.filter(m => o[m].rank === 1).map(m => lab[m]).join(", ");
-    const H8 = R.cross["synthetic|base"].H8_p, H9 = R.cross["synthetic|base"].H9_p;
+    const H8 = R.cross["synthetic|base"].H8_p, H9 = R.cross["synthetic|base"].H9_p, H8r = R.cross_real.base.H8_p, H9r = R.cross_real.base.H9_p;
     const testRows = [
-      ["H1", "Does the day matter at all?", "Friedman test over the 7 days; Kendall's W for size", `${cnt(tb, t => t.friedman_p < 0.05)} of ${nm} models; W ${Math.min(...repo.map(m => tb[m].kendall_w)).toFixed(2)}–${Math.max(...repo.map(m => tb[m].kendall_w)).toFixed(2)}`, "needs one more cluster run"],
+      ["H1", "Does the day matter at all?", "Friedman test over the 7 days; Kendall's W for size", `${cnt(tb, t => t.friedman_p < 0.05)} of ${nm} models; W ${rng(tb, "kendall_w")}`, `${cnt(tr, t => t.friedman_p < 0.05)} of ${nm} models; W ${rng(tr, "kendall_w")}`],
       ["H2", "Is weekend risk different from weekday risk, same patient?", "Wilcoxon signed-rank on per-patient shifts, Holm across 13 models", `${cnt(sb, d => d.sig)} of ${nm} (${cnt(sb, d => d.sig && d.shift > 0)} up, ${cnt(sb, d => d.sig && d.shift < 0)} down)`, `${cnt(mb, d => d.sig)} of ${nm} (${cnt(mb, d => d.sig && d.shift > 0)} up, ${cnt(mb, d => d.sig && d.shift < 0)} down)`],
       ["H3", "Is the weekend special?", "Rank of Sat + Sun among all 21 pairs of days", "rank 1: " + rank1(sb), "rank 1: " + rank1(mb)],
-      ["H4", "Placebo: do Tuesday and Wednesday differ?", "Wilcoxon on Tue − Wed (should be zero)", `nonzero in ${cnt(tb, t => t.placebo_p < 0.05)} of ${nm} (uncorrected), small`, "values only"],
-      ["H5", "Does naming any day change risk?", "Average of 7 days − no-day version", `yes in ${cnt(tb, t => t.noday_p < 0.05)} of ${nm}`, "values only (chart above)"],
-      ["H6", "Does the ICU decision change at weekends?", "Exact McNemar test, Holm", `significant in ${cnt(tb, t => t.icu_p_holm < 0.05)} of ${nm}`, "flips 0–3.5%"],
-      ["H7", "Bigger for some conditions or severities?", "Kruskal–Wallis", `condition: ${cnt(tb, t => t.kw_condition_p < 0.05)} of ${nm}; severity: ${cnt(tb, t => t.kw_severity_p < 0.05)} of ${nm}`, "needs one more cluster run"],
-      ["H8", "Do models differ from each other?", "Friedman across models, same patients", `yes, p = ${H8.toExponential(0)}`, "needs one more cluster run"],
-      ["H9", "Do models differ in how often answers swing 10+ points?", "Cochran's Q", `yes, p = ${H9.toExponential(0)}`, "needs one more cluster run"],
-      ["H10", "Does the fairness sentence shrink each patient's shift?", "Wilcoxon on shift(usual) − shift(fair), Holm", `only ${repo.filter(m => R.mitigation[m] && R.mitigation[m].p_holm < 0.05).map(m => lab[m]).join(", ") || "none"}`, "significance drops in 2 models"],
-      ["C1", "Sanity check: sicker cases get higher risk?", "Spearman, severity vs no-day risk", `yes for all; ρ ${Math.min(...repo.map(m => tb[m].c1_rho)).toFixed(2)}–${Math.max(...repo.map(m => tb[m].c1_rho)).toFixed(2)}`, "AUROC 0.67–0.92"]];
+      ["H4", "Placebo: do Tuesday and Wednesday differ?", "Wilcoxon on Tue − Wed (should be zero)", `nonzero in ${cnt(tb, t => t.placebo_p < 0.05)} of ${nm} (uncorrected), ${rng(tb, "placebo")} points`, `nonzero in ${cnt(tr, t => t.placebo_p < 0.05)} of ${nm} (uncorrected), ${rng(tr, "placebo")} points`],
+      ["H5", "Does naming any day change risk?", "Average of 7 days − no-day version", `yes in ${cnt(tb, t => t.noday_p < 0.05)} of ${nm}`, `yes in ${cnt(tr, t => t.noday_p < 0.05)} of ${nm}`],
+      ["H6", "Does the ICU decision change at weekends?", "Exact McNemar test, Holm", `significant in ${cnt(tb, t => t.icu_p_holm < 0.05)} of ${nm}; flips ${(100 * Math.min(...repo.map(m => tb[m].icu_flip))).toFixed(0)}–${(100 * Math.max(...repo.map(m => tb[m].icu_flip))).toFixed(1)}%`, `significant in ${cnt(tr, t => t.icu_p_holm < 0.05)} of ${nm} (${named(tr, t => t.icu_p_holm < 0.05)}); flips ${(100 * Math.min(...repo.map(m => tr[m].icu_flip))).toFixed(0)}–${(100 * Math.max(...repo.map(m => tr[m].icu_flip))).toFixed(1)}%`],
+      ["H7", "Bigger for some conditions or severities?", "Kruskal–Wallis (real: diagnosis group and triage acuity)", `condition: ${cnt(tb, t => t.kw_condition_p < 0.05)} of ${nm}; severity: ${cnt(tb, t => t.kw_severity_p < 0.05)} of ${nm}`, `diagnosis: ${cnt(tr, t => t.kw_condition_p < 0.05)} of ${nm}; acuity: ${cnt(tr, t => t.kw_severity_p < 0.05)} of ${nm}`],
+      ["H8", "Do models differ from each other?", "Friedman across models, same patients", `yes, p = ${H8.toExponential(0)}`, `yes, p = ${H8r.toExponential(0)}`],
+      ["H9", "Do models differ in how often answers swing 10+ points?", "Cochran's Q", `yes, p = ${H9.toExponential(0)}`, `yes, p = ${H9r.toExponential(0)}`],
+      ["H10", "Does the fairness sentence shrink each patient's shift?", "Wilcoxon on shift(usual) − shift(fair), Holm", `only ${named(R.mitigation, x => x.p_holm < 0.05)}`, named(R.mitigation_real, x => x.p_holm < 0.05)],
+      ["C1", "Sanity check: sicker cases get higher risk?", "Spearman, severity (real: triage acuity) vs no-day risk", `yes for all; ρ ${rng(tb, "c1_rho")}`, `yes for all; ρ ${rng(tr, "c1_rho")}; AUROC 0.67–0.92`],
+      ["Real outcome", "Is the shift different for patients who later died?", "Mann–Whitney, died vs survived, Holm", "–", `in ${cnt(R.outcome, o => o.p_holm < 0.05)} of ${nm}: ` + repo.filter(m => R.outcome[m].p_holm < 0.05).map(m => `${lab[m]} ${sgn(R.outcome[m].died)} vs ${sgn(R.outcome[m].survived)}`).join("; ")]];
     $("#testTable").innerHTML = `<thead><tr><th>Test</th><th>Question</th><th>Method</th><th>Synthetic patients</th><th>Real patients</th></tr></thead><tbody>` +
       testRows.map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join("") + "</tbody>";
-    function detail(p) {
-      const t = R.tests[p], s = R.summary["synthetic|" + p];
+    const dst = { ds: "synthetic", p: "base" };
+    function detail() {
+      const p = dst.p, t = (dst.ds === "mimic" ? R.tests_real : R.tests)[p], s = R.summary[dst.ds + "|" + p];
       $("#detailTable").innerHTML = `<thead><tr><th>Model</th><th class="r">Shift</th><th class="r">Holm p</th><th class="r">Rank /21</th><th class="r">Kendall W</th><th class="r">Placebo</th><th class="r">Named vs no day</th><th class="r">ICU flips</th><th class="r">Swing ≥10</th><th class="r">Severity ρ</th></tr></thead><tbody>` +
         repo.map(m => `<tr><td>${lab[m]}</td><td class="r">${sgn(s[m].shift)}</td><td class="r">${pfmt(t[m].wilcoxon_p_holm)}</td><td class="r">${s[m].rank}</td><td class="r">${t[m].kendall_w.toFixed(3)}</td><td class="r">${sgn(t[m].placebo)}</td><td class="r">${sgn(t[m].noday)}</td><td class="r">${pct(t[m].icu_flip)}</td><td class="r">${pct(t[m].swing10)}</td><td class="r">${t[m].c1_rho === null ? "–" : t[m].c1_rho.toFixed(2)}</td></tr>`).join("") + "</tbody>";
     }
-    detail(seg($("#detailPrompt"), detail));
+    dst.p = seg($("#detailPrompt"), v => { dst.p = v; detail(); });
+    dst.ds = seg($("#detailDs"), v => { dst.ds = v; detail(); });
+    detail();
 
     const G = [["Weekend shift", "For one patient: average predicted risk on Saturday and Sunday minus the average on Monday to Friday. Reported as the average over patients, in points on the 0–100 scale."],
       ["Wilcoxon signed-rank test", "Asks whether the per-patient shifts are centred on zero. It uses only the direction and rank of each change, so a few huge swings cannot dominate."],
