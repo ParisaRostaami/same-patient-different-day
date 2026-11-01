@@ -411,7 +411,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
         <p class="sub">Each arrow goes from the usual prompt to the prompt with the fairness sentence.</p>
         <div class="controls"><span class="seg" data-ctl="ds"><button type="button" data-v="mimic" aria-pressed="true">Real patients</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic</button></span></div>
         <div class="plot"></div>
-        <p class="read"><b>How to read it.</b> On real patients the shift disappears for Qwen2.5-1.5B, 3B and 72B and for BioMistral, but 5 models stay shifted, including Qwen2.5-32B and Llama-3.3-70B. On synthetic patients no working model improves significantly.</p>
+        <p class="read"><b>How to read it.</b> On real patients the shift disappears for Qwen2.5-1.5B, 3B and 72B; BioMistral is no longer significant but its shift is just as large; 5 models stay shifted, including Qwen2.5-32B and Llama-3.3-70B. On synthetic patients no working model improves significantly.</p>
       </figure>
     </div>
 
@@ -781,7 +781,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
       ["Just naming a day changes risk.", "Compared with no day, Med42 adds 2.1 points and OpenBioLLM 1.9 on synthetic patients; Qwen2.5-0.5B drops 4.9 on real ones."],
       ["Bigger is not cleaner.", "Qwen2.5-72B ranks real deaths best of all 13 (AUROC 0.92) yet still adds +0.28 points at weekends; Llama-3.3-70B adds +0.31. Qwen2.5-32B adds +0.64, and the weekend is its most different of 21 day pairs."],
       ["Medical training does not fix it.", "BioMistral shifts the opposite way from its base Mistral. OpenBioLLM answers about 50% for almost everyone."],
-      ["Asking politely helps only some models.", "With a sentence saying the day is not clinical information, 4 models stop shifting on real patients (Qwen2.5-1.5B, 3B, 72B, BioMistral) and 5 stay shifted, including Llama-3.3-70B."],
+      ["Asking politely helps only some models.", "With a sentence saying the day is not clinical information, 3 models stop shifting on real patients (Qwen2.5-1.5B, 3B, 72B) and 5 stay shifted, including Llama-3.3-70B."],
       ["ICU decisions hardly move.", "0–3.5% of patients flip between ICU yes and no with the weekend."],
       ["Real gaps are mostly case mix.", "Real weekend and night death gaps (odds ratio up to 1.31) mostly vanish after adjusting for unit, admission source and severity: eICU night 1.31 → 0.96."],
       ["MIMIC-IV hides the real weekday.", "Its planned admissions do not dip at weekends, so its weekend effect cannot be measured; MIMIC-III keeps real weekdays."]];
