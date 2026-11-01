@@ -247,6 +247,24 @@ svg .a-line { animation: draw 1.2s ease-out; }
 .ico { width: 34px; height: 34px; flex-shrink: 0; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .c-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .c-acts { display: flex; gap: 10px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+
+/* country test */
+.cweeks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px; }
+.cweek { background: var(--surface); border: 2px solid var(--ink); padding: 12px 14px; }
+.cweek-h b { font-family: var(--display); font-size: 24px; display: block; line-height: 1.05; }
+.cweek-h span { font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cweek-d { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin: 10px 0 8px; }
+.cweek-d span { font: 600 11.5px var(--mono); text-align: center; padding: 6px 0; border: 1.5px solid var(--ink); background: var(--surface); }
+.cweek-d span.we { background: var(--hot); color: var(--hottext); }
+.cweek-d span.un { border-style: dashed; color: var(--muted); }
+.cweek p { margin: 0; font-size: 14px; color: var(--muted); }
+table.cx { border-collapse: collapse; width: 100%; min-width: 640px; font-variant-numeric: tabular-nums; }
+table.cx th { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 6px 8px; text-align: left; }
+table.cx th.r { text-align: center; }
+table.cx td { text-align: center; padding: 9px 6px; border: 1px solid var(--grid); font-weight: 600; cursor: pointer; }
+table.cx td.we { outline: 3px solid var(--ink); outline-offset: -3px; }
+table.cx td.nd { border-style: dashed; }
+table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
 </style>
 </head>
 <body>
@@ -258,8 +276,8 @@ svg .a-line { animation: draw 1.2s ease-out; }
   <div class="wrap">
     <a class="brand" href="#top">Same Patient, <span>Different Day</span></a>
     <nav class="nav" aria-label="Sections">
-      <a href="#try">Try it</a><a href="#explore">Explorer</a><a href="#findings">Findings</a><a href="#charts">Charts</a>
-      <a href="#real">Real hospitals</a><a href="#stats">Statistics</a><a href="#models">Models</a><a href="#about">Contact</a>
+      <a href="#try">Try it</a><a href="#explore">Explorer</a><a href="#findings">Findings</a><a href="#charts">Charts</a><a href="#country">Countries</a>
+      <a href="#real">Hospitals</a><a href="#stats">Statistics</a><a href="#models">Models</a><a href="#about">Contact</a>
     </nav>
     <div class="themes" role="group" aria-label="Color theme">
       <button class="sw-wsu" data-p="wsu" title="WSU" aria-label="WSU theme"></button>
@@ -282,7 +300,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
     <p class="lede">We gave 13 language models the same emergency patients again and again, changing only the day of admission. If a model raises the risk of death because it is Saturday, it is applying the hospital "weekend effect" to someone it already knows everything about.</p>
     <div class="flipbox" id="flipbox"><span>Admitted on a</span><span class="flap" id="flapDay"><span>Sunday</span></span><span>morning: predicted risk of death</span><span class="flap" id="flapRisk"><span>80%</span></span></div>
     <p class="fl-cap">The same 71-year-old woman with a pulmonary embolism, asked to Llama-3-8B. Only the day changes.</p>
-    <div class="who"><b>Parisa Rostami</b><span>Computer Science, Wichita State University</span><a href="#about">Contact and links</a></div>
+    <div class="who"><b>Parisa Rostami</b><span>School of Computing, Wichita State University</span><a href="#about">Contact and links</a></div>
     <div class="stats" id="heroStats"></div>
   </div>
 </section>
@@ -434,6 +452,48 @@ svg .a-line { animation: draw 1.2s ease-out; }
   </div>
 </section>
 
+<section class="block" id="country">
+  <div class="wrap">
+    <div class="sec-head"><div class="daybox"><i></i><span>NEW</span><b>4</b></div><h2>Same patient, different country</h2><p>Where is the weekend? We placed every patient in four hospitals whose weekends fall on different days and asked again: 4 cities × (7 days + no day), plus a Boston version that adds “Staffing and services at this hospital are the same on every day of the week.” That is 40 prompts per patient, 13 models, 1,100 patients and 572,000 answers.</p></div>
+    <div class="cweeks" id="cWeeks"></div>
+    <div class="controls" style="margin-top:18px"><span class="seg" id="cDs"><button type="button" data-v="mimic4" aria-pressed="true">Real patients (MIMIC-IV)</button><button type="button" data-v="mimic3" aria-pressed="false">Real patients (MIMIC-III)</button><button type="button" data-v="synthetic" aria-pressed="false">Synthetic patients</button></span></div>
+    <div class="grid2">
+      <figure class="fig" id="f-city">
+        <h3>Only the city changes</h3>
+        <p class="sub">No day in the text. Change in the same patient’s predicted risk compared with Boston, in percentage points. Filled = significant after Holm correction.</p>
+        <div class="plot"></div>
+        <p class="read" id="cityRead"></p>
+      </figure>
+      <figure class="fig" id="f-where">
+        <h3>Where is the weekend?</h3>
+        <p class="sub">Each model’s weekend shift split in two: the <b>local weekend</b> (Friday in Tehran, Fri–Sat in Tel Aviv and Riyadh) and the <b>words “Saturday” and “Sunday”</b> wherever they appear. Bars are 95% CIs.</p>
+        <div class="plot"></div>
+        <p class="read" id="whereRead"></p>
+      </figure>
+    </div>
+    <figure class="fig" id="f-prof">
+      <h3>Day by day, in each city</h3>
+      <p class="sub">Change in predicted risk on each day compared with Monday–Wednesday (workdays in all four countries). Gold = that city’s weekend. Pick a model.</p>
+      <div class="controls"><label for="profModel">Model<select id="profModel"></select></label><span class="seg" id="profStaff"><button type="button" data-v="0" aria-pressed="true">Usual Boston text</button><button type="button" data-v="1" aria-pressed="false">Boston + staffing sentence</button></span></div>
+      <div class="plot"></div>
+      <p class="read" id="profRead"></p>
+    </figure>
+    <figure class="fig" id="f-staff">
+      <h3>Saying that staffing is the same every day</h3>
+      <p class="sub">Boston weekend gap (weekend minus weekday risk) without and with the staffing sentence. The arrow shows how the gap moved. The number on the right is how much the sentence changed the overall risk.</p>
+      <div class="plot"></div>
+      <p class="read" id="staffRead"></p>
+    </figure>
+    <figure class="fig" id="f-cx">
+      <h3>Explore one patient in four countries</h3>
+      <p class="sub">All 40 answers one model gave for one synthetic patient. Gold outline = that city’s weekend. Tap a cell to read the exact last sentence the model saw. (Real patients are not shown: their records cannot be shared.)</p>
+      <div class="controls"><label for="cxModel">Model<select id="cxModel"></select></label><label for="cxCase">Patient<select id="cxCase"></select></label><button class="btn primary" id="cxFind" type="button">Show a patient where the city matters</button></div>
+      <div class="tablewrap"><table class="cx" id="cxTable"></table></div>
+      <div class="casebox" id="cxText" style="margin-top:12px"></div>
+    </figure>
+  </div>
+</section>
+
 <section class="weekend" id="real">
   <div class="wrap">
     <div class="sec-head"><div class="daybox"><i></i><span>SAT</span><b>7</b></div><h2>In real hospitals, the gap is who comes in</h2><p>Do weekend and night patients really die more often? We checked three real databases. Only counts and rates were computed, inside the university cluster.</p></div>
@@ -495,7 +555,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
         </ul></div>
       <div class="card"><div class="eyebrow">Coming next</div>
         <ul style="margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:15.5px">
-          <li>Where is the weekend? The same patients in Boston, Tehran, Tel Aviv and Riyadh, whose weekends fall on different days (running now).</li>
+          <li>Test more features one at a time (sex, insurance, language) on small models, then larger and commercial models. The country test is done: see <a href="#country">Same patient, different country</a>.</li>
           <li>TwinDay benchmark: clock time, holidays, the July effect, bare dates, staffing, race × day.</li>
           <li>Reasoning models, and where the shift lives inside the model.</li>
           <li>Other prompt wordings, and a fine-tuning fix that teaches models to ignore the day.</li>
@@ -515,7 +575,7 @@ svg .a-line { animation: draw 1.2s ease-out; }
 
 <footer>
   <div class="wrap">
-    <p>Parisa Rostami · M.S. Computer Science, Wichita State University · Advisor: Cody Farlow · Results as of <span id="updated">Oct 31, 2026</span>. MIMIC-III, MIMIC-IV and eICU-CRD were used under PhysioNet credentialed access; no patient-level data is shown or leaves the WSU cluster. References: Bell &amp; Redelmeier, N Engl J Med 2001; Pauls et al., J Hosp Med 2017; Walker et al., Lancet 2017; Meacock et al., J Health Serv Res Policy 2017; Johnson et al., Sci Data 2016 and 2023; Pollard et al., Sci Data 2018.</p>
+    <p>Parisa Rostami · M.S. Computer Science, School of Computing, Wichita State University · Advisor: Cody Farlow · Results as of <span id="updated">Oct 31, 2026</span>. MIMIC-III, MIMIC-IV and eICU-CRD were used under PhysioNet credentialed access; no patient-level data is shown or leaves the WSU cluster. References: Bell &amp; Redelmeier, N Engl J Med 2001; Pauls et al., J Hosp Med 2017; Walker et al., Lancet 2017; Meacock et al., J Health Serv Res Policy 2017; Johnson et al., Sci Data 2016 and 2023; Pollard et al., Sci Data 2018.</p>
   </div>
 </footer>
 
@@ -1123,6 +1183,219 @@ svg .a-line { animation: draw 1.2s ease-out; }
       }
       draw();
     })();
+
+    // ---------- country test (data/country.json)
+    fetch("data/country.json").then(r => r.json()).then(K => {
+      const CT = ["USA", "Iran", "Israel", "Saudi Arabia"];
+      const CITY = { USA: "Boston", Iran: "Tehran", Israel: "Tel Aviv", "Saudi Arabia": "Riyadh" };
+      const PLACE = { USA: "Boston, United States", Iran: "Tehran, Iran", Israel: "Tel Aviv, Israel", "Saudi Arabia": "Riyadh, Saudi Arabia" };
+      const DD = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "none"];
+      const isWE = (c, d) => K.countries[c].weekend.includes(d);
+      const sig = v => v && v[3] !== null && v[3] < 0.05;
+      const st = { ds: "mimic4" };
+      // the four weeks
+      const wk = $("#cWeeks");
+      CT.forEach(c => {
+        const card = H("div", { class: "cweek" });
+        card.appendChild(H("div", { class: "cweek-h" }, `<b>${CITY[c]}</b><span>${c === "USA" ? "United States" : c}</span>`));
+        const row = H("div", { class: "cweek-d" });
+        DD.slice(0, 7).forEach((d, k) => {
+          const un = (K.countries[c].unclear || []).includes(d);
+          row.appendChild(H("span", { class: isWE(c, d) ? "we" : un ? "un" : "" }, SHORT[k]));
+        });
+        card.appendChild(row);
+        card.appendChild(H("p", {}, c === "Iran" ? "Weekend: Friday. Thursday is in flux, so it is left out." : `Weekend: ${K.countries[c].weekend.map(d => d.slice(0, 3)).join("–")}`));
+        wk.appendChild(card);
+      });
+      const rows = () => repo.filter(m => K.tests[st.ds][m]);
+      // 1. city only
+      function drawCity() {
+        const T0 = K.tests[st.ds], key = c => `country_vs_usa_no_day|${c}`;
+        const ms = rows().sort((a, b) => T0[b][key("Iran")][0] - T0[a][key("Iran")][0]);
+        const vals = ms.flatMap(m => ["Iran", "Israel", "Saudi Arabia"].map(c => T0[m][key(c)][0]));
+        const lo = Math.min(-2, Math.floor(Math.min(...vals))), hi = Math.max(4, Math.ceil(Math.max(...vals)));
+        const W = 560, rowH = 26, top = 34, left = 150, right = 16, Hh = top + rowH * ms.length + 44;
+        const x = scale(lo, hi, left, W - right);
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Change in risk when only the city changes" });
+        for (let t = lo; t <= hi; t++) { S("line", { x1: x(t), x2: x(t), y1: top - 8, y2: Hh - 40, stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); if (t % 2 === 0 || hi - lo <= 8) T(svg, x(t), Hh - 24, sgn(t, 0).replace("+0", "0").replace("−0", "0"), { "text-anchor": "middle" }); }
+        T(svg, (left + W - right) / 2, Hh - 4, "points vs Boston (same patient, no day)", { "text-anchor": "middle", "font-size": 12 });
+        const MK = { Iran: { f: "var(--hot)", s: "circle" }, "Saudi Arabia": { f: "var(--accent2)", s: "square" }, Israel: { f: "var(--ink)", s: "tri" } };
+        let lx = left;
+        [["Iran", "Tehran"], ["Saudi Arabia", "Riyadh"], ["Israel", "Tel Aviv"]].forEach(([c, n]) => { mark(svg, lx + 6, 14, c, true, 6); T(svg, lx + 16, 18, n, { fill: "var(--ink)", "font-size": 12.5 }); lx += 90; });
+        function mark(p, cx, cy, c, filled, r) {
+          const a = { fill: filled ? MK[c].f : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.5 };
+          if (MK[c].s === "circle") return S("circle", Object.assign({ cx, cy, r }, a), p);
+          if (MK[c].s === "square") return S("rect", Object.assign({ x: cx - r, y: cy - r, width: 2 * r, height: 2 * r, class: "a-sq" }, a), p);
+          return S("path", Object.assign({ d: `M${cx} ${cy - r - 1}L${cx + r + 1} ${cy + r}L${cx - r - 1} ${cy + r}Z`, class: "a-sq" }, a), p);
+        }
+        ms.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2;
+          if (k % 2) S("rect", { x: left, y: yy - rowH / 2, width: W - left - right, height: rowH, fill: "var(--grid)", opacity: .5 }, svg);
+          T(svg, left - 8, yy + 4, lab[m], { "text-anchor": "end", fill: "var(--ink)", "font-size": 12.5 });
+          ["Israel", "Saudi Arabia", "Iran"].forEach(c => {
+            const v = T0[m][key(c)], g = S("g", {}, svg);
+            mark(g, x(v[0]), yy, c, sig(v), c === "Iran" ? 7 : 6);
+            tip(g, () => `<b>${lab[m]}</b><br>${CITY[c]} vs Boston: ${sgn(v[0])} points<br>95% CI ${sgn(v[1])} to ${sgn(v[2])}<br>Holm p ${pfmt(v[3])}`);
+          });
+        });
+        const plot = $("#f-city .plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+        const cnt = c => [ms.filter(m => T0[m][key(c)][0] > 0).length, ms.filter(m => sig(T0[m][key(c)])).length];
+        const med = c => { const a = ms.map(m => T0[m][key(c)][0]).sort((p, q) => p - q); return a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2; };
+        const [ti, ts] = cnt("Iran"), [ri, rs] = cnt("Saudi Arabia"), [ai, as] = cnt("Israel");
+        $("#cityRead").innerHTML = `<b>How to read it.</b> Right of the dashed line = higher risk than the same patient in Boston. Tehran: higher in ${ti} of ${ms.length} models (${ts} significant), median ${sgn(med("Iran"), 1)}. Riyadh: ${ri} higher (${rs} significant), median ${sgn(med("Saudi Arabia"), 1)}. Tel Aviv: ${ai} higher (${as} significant), median ${sgn(med("Israel"), 1)}. The case text, vital signs and labs are identical.`;
+      }
+      // 2. where is the weekend
+      function drawWhere() {
+        const D0 = K.decomp[st.ds];
+        const ms = rows().filter(m => D0[m]).sort((a, b) => D0[b].word[0] - D0[a].word[0]);
+        const vals = ms.flatMap(m => [D0[m].local[1], D0[m].local[2], D0[m].word[1], D0[m].word[2]]);
+        const lo = Math.min(-1, Math.floor(Math.min(...vals) * 2) / 2), hi = Math.max(1, Math.ceil(Math.max(...vals) * 2) / 2);
+        const W = 560, rowH = 30, top = 34, left = 150, right = 16, Hh = top + rowH * ms.length + 44;
+        const x = scale(lo, hi, left, W - right);
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Local weekend versus the words Saturday and Sunday" });
+        const step = hi - lo > 4 ? 1 : 0.5;
+        for (let t = Math.ceil(lo / step) * step; t <= hi + 1e-9; t += step) { S("line", { x1: x(t), x2: x(t), y1: top - 8, y2: Hh - 40, stroke: Math.abs(t) < 1e-9 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": Math.abs(t) < 1e-9 ? "4 3" : null }, svg); T(svg, x(t), Hh - 24, Math.abs(t) < 1e-9 ? "0" : sgn(t, step < 1 ? 1 : 0), { "text-anchor": "middle" }); }
+        T(svg, (left + W - right) / 2, Hh - 4, "points of predicted risk", { "text-anchor": "middle", "font-size": 12 });
+        S("circle", { cx: left + 6, cy: 14, r: 6, fill: "var(--hot)", stroke: "var(--ink)", "stroke-width": 1.5 }, svg); T(svg, left + 16, 18, "local weekend", { fill: "var(--ink)", "font-size": 12.5 });
+        S("rect", { x: left + 124, y: 8, width: 12, height: 12, fill: "var(--ink)", class: "a-sq" }, svg); T(svg, left + 142, 18, "the words “Saturday”/“Sunday”", { fill: "var(--ink)", "font-size": 12.5 });
+        ms.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2, d = D0[m];
+          if (k % 2) S("rect", { x: left, y: yy - rowH / 2, width: W - left - right, height: rowH, fill: "var(--grid)", opacity: .5 }, svg);
+          T(svg, left - 8, yy + 4, lab[m], { "text-anchor": "end", fill: "var(--ink)", "font-size": 12.5 });
+          const g = S("g", {}, svg);
+          S("line", { x1: x(d.local[1]), x2: x(d.local[2]), y1: yy - 5, y2: yy - 5, stroke: "var(--ink)", "stroke-width": 1.6 }, g);
+          S("circle", { cx: x(d.local[0]), cy: yy - 5, r: 6, fill: sig(d.local) ? "var(--hot)" : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.5 }, g);
+          S("line", { x1: x(d.word[1]), x2: x(d.word[2]), y1: yy + 6, y2: yy + 6, stroke: "var(--ink)", "stroke-width": 1.6 }, g);
+          S("rect", { x: x(d.word[0]) - 5.5, y: yy + 0.5, width: 11, height: 11, fill: sig(d.word) ? "var(--ink)" : "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.5, class: "a-sq" }, g);
+          tip(g, () => `<b>${lab[m]}</b>: ${d.pattern}<br>Local weekend: ${sgn(d.local[0])} (${sgn(d.local[1])} to ${sgn(d.local[2])}), Holm p ${pfmt(d.local[3])}<br>Sat/Sun words: ${sgn(d.word[0])} (${sgn(d.word[1])} to ${sgn(d.word[2])}), Holm p ${pfmt(d.word[3])}`);
+        });
+        const plot = $("#f-where .plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+        const by = {}; ms.forEach(m => { (by[D0[m].pattern] = by[D0[m].pattern] || []).push(lab[m]); });
+        $("#whereRead").innerHTML = `<b>How to read it.</b> A gold dot right of 0: the model raises risk on the local weekend, as if it reasons about staffing. A black square right of 0: it raises risk on Saturday and Sunday even where those are workdays, so it reacts to the word. Filled = significant. ` +
+          Object.keys(by).map(p => `<b>${p[0].toUpperCase() + p.slice(1)}:</b> ${by[p].join(", ")}.`).join(" ");
+      }
+      // 3. day profile per city
+      const pm = $("#profModel"); M.forEach(m => pm.add(new Option(m.label, m.repo))); pm.value = "ibnzterrell/Meta-Llama-3.3-70B-Instruct-AWQ-INT4";
+      const ps = { staff: "0" };
+      pm.addEventListener("change", drawProf);
+      ps.staff = seg($("#profStaff"), v => { ps.staff = v; drawProf(); });
+      function drawProf() {
+        const P = K.profile[st.ds][pm.value];
+        const fig = $("#f-prof .plot"); fig.innerHTML = "";
+        if (!P) { fig.textContent = "No data for this model."; return; }
+        const all = CT.flatMap(c => (P[`${c}|${c === "USA" ? ps.staff : 0}`] || []).slice(0, 7).filter(Boolean).flatMap(v => [v[1], v[2]]));
+        const ext = Math.max(1, ...all.map(Math.abs)) * 1.08;
+        const W = 1000, Hh = 250, pw = 224, gap = 22, top = 30, bot = 40, lm = 34;
+        const y = scale(-ext, ext, Hh - bot, top);
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Day-by-day shift in each city" });
+        const tstep = ext > 6 ? 2 : ext > 3 ? 1 : 0.5;
+        CT.forEach((c, j) => {
+          const x0 = lm + j * (pw + gap), v = P[`${c}|${c === "USA" ? ps.staff : 0}`] || [];
+          for (let t = -Math.floor(ext / tstep) * tstep; t <= ext + 1e-9; t += tstep) {
+            if (Math.abs(t) < 1e-9) continue;
+            S("line", { x1: x0, x2: x0 + pw, y1: y(t), y2: y(t), stroke: "var(--grid)" }, svg);
+            if (j === 0) T(svg, x0 - 4, y(t) + 4, sgn(t, tstep < 1 ? 1 : 0), { "text-anchor": "end", "font-size": 11 });
+          }
+          if (j === 0) T(svg, x0 - 4, y(0) + 4, "0", { "text-anchor": "end", "font-size": 11 });
+          T(svg, x0, 16, CITY[c] + (c === "USA" && ps.staff === "1" ? " + staffing" : ""), { fill: "var(--ink)", "font-size": 14, "font-weight": 600 });
+          S("line", { x1: x0, x2: x0 + pw, y1: y(0), y2: y(0), stroke: "var(--muted)", "stroke-dasharray": "4 3" }, svg);
+          const bw = pw / 7;
+          for (let k = 0; k < 7; k++) {
+            const d = DD[k], val = v[k];
+            const un = (K.countries[c].unclear || []).includes(d);
+            T(svg, x0 + bw * k + bw / 2, Hh - 22, SHORT[k], { "text-anchor": "middle", "font-size": 11.5, fill: isWE(c, d) ? "var(--ink)" : "var(--muted)", "font-weight": isWE(c, d) ? 700 : 400 });
+            if (!val) continue;
+            const g = S("g", {}, svg), yv = y(val[0]);
+            S("rect", { x: x0 + bw * k + 4, width: bw - 8, y: Math.min(yv, y(0)), height: Math.max(1, Math.abs(yv - y(0))), fill: isWE(c, d) ? "var(--hot)" : un ? "var(--grid)" : "var(--accent2)", stroke: "var(--ink)", "stroke-width": 1, class: "a-barv" }, g);
+            S("line", { x1: x0 + bw * k + bw / 2, x2: x0 + bw * k + bw / 2, y1: y(val[1]), y2: y(val[2]), stroke: "var(--ink)", "stroke-width": 1.4 }, g);
+            tip(g, () => `<b>${CITY[c]}, ${d}</b>${isWE(c, d) ? " (weekend)" : un ? " (unclear day)" : ""}<br>${sgn(val[0])} points vs Mon–Wed<br>95% CI ${sgn(val[1])} to ${sgn(val[2])}`);
+          }
+        });
+        T(svg, 4, Hh - 2, `points vs Monday–Wednesday, ${K.datasets[st.ds]}`, { "font-size": 12 });
+        fig.appendChild(svg); animateMarks(svg);
+        const d = K.decomp[st.ds][pm.value];
+        $("#profRead").innerHTML = d ? `<b>${lab[pm.value]}:</b> ${d.pattern}. If the gold bars rise in every city, the model follows the local weekend. If Saturday and Sunday rise even in Tehran, Tel Aviv and Riyadh (where they are workdays), it reacts to the words.` : "";
+      }
+      // 4. staffing
+      function drawStaff() {
+        const F = K.staffing[st.ds];
+        const ms = rows().filter(m => F[m]).sort((a, b) => F[b].gap - F[a].gap);
+        const vals = ms.flatMap(m => [F[m].gap, F[m].gap_staff]);
+        const lo = Math.min(-1, Math.floor(Math.min(...vals))), hi = Math.max(1, Math.ceil(Math.max(...vals)));
+        const W = 1000, rowH = 26, top = 30, left = 170, right = 190, Hh = top + rowH * ms.length + 40;
+        const x = scale(lo, hi, left, W - right);
+        const svg = S("svg", { viewBox: `0 0 ${W} ${Hh}`, role: "img", "aria-label": "Weekend gap with and without the staffing sentence" });
+        S("defs", {}, svg).innerHTML = '<marker id="cxArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>';
+        for (let t = lo; t <= hi; t++) { S("line", { x1: x(t), x2: x(t), y1: top - 8, y2: Hh - 36, stroke: t === 0 ? "var(--muted)" : "var(--grid)", "stroke-dasharray": t === 0 ? "4 3" : null }, svg); T(svg, x(t), Hh - 20, t === 0 ? "0" : sgn(t, 0), { "text-anchor": "middle" }); }
+        T(svg, (left + W - right) / 2, Hh - 2, "Boston weekend gap, points", { "text-anchor": "middle", "font-size": 12 });
+        T(svg, W - right + 12, 14, "overall change", { "font-size": 12 });
+        S("circle", { cx: left + 6, cy: 12, r: 6, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.5 }, svg); T(svg, left + 16, 16, "usual text", { fill: "var(--ink)", "font-size": 12.5 });
+        S("circle", { cx: left + 106, cy: 12, r: 6, fill: "var(--hot)", stroke: "var(--ink)", "stroke-width": 1.5 }, svg); T(svg, left + 116, 16, "+ staffing sentence", { fill: "var(--ink)", "font-size": 12.5 });
+        ms.forEach((m, k) => {
+          const yy = top + rowH * k + rowH / 2, f = F[m], g = S("g", { color: "var(--ink)" }, svg);
+          if (k % 2) S("rect", { x: left, y: yy - rowH / 2, width: W - left - right, height: rowH, fill: "var(--grid)", opacity: .5 }, svg);
+          T(svg, left - 8, yy + 4, lab[m], { "text-anchor": "end", fill: "var(--ink)", "font-size": 12.5 });
+          if (Math.abs(x(f.gap_staff) - x(f.gap)) > 14) S("line", { x1: x(f.gap) + (f.gap_staff > f.gap ? 7 : -7), x2: x(f.gap_staff) + (f.gap_staff > f.gap ? -8 : 8), y1: yy, y2: yy, stroke: "var(--ink)", "stroke-width": 1.4, "marker-end": "url(#cxArrow)" }, g);
+          S("circle", { cx: x(f.gap), cy: yy, r: 6, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 1.5 }, g);
+          S("circle", { cx: x(f.gap_staff), cy: yy, r: 6, fill: "var(--hot)", stroke: "var(--ink)", "stroke-width": 1.5 }, g);
+          const lv = f.level, lsig = lv[1] > 0 || lv[2] < 0;
+          T(svg, W - right + 12, yy + 4, `${sgn(lv[0], 1)} pts${lsig ? "" : " (n.s.)"}`, { fill: "var(--ink)", "font-size": 12.5, "font-weight": lsig ? 600 : 400 });
+          tip(g, () => `<b>${lab[m]}</b><br>Weekend gap: ${sgn(f.gap)} → ${sgn(f.gap_staff)} points<br>Gap removed: ${sgn(f.removed[0])} (95% CI ${sgn(f.removed[1])} to ${sgn(f.removed[2])}), p ${pfmt(f.removed[3])}<br>Overall risk change: ${sgn(lv[0])} (${sgn(lv[1])} to ${sgn(lv[2])})`);
+        });
+        const plot = $("#f-staff .plot"); plot.innerHTML = ""; plot.appendChild(svg); animateMarks(svg);
+        const down = ms.filter(m => F[m].level[2] < 0).length, narrowed = ms.filter(m => F[m].removed[0] > 0 && F[m].removed[3] < 0.05).length;
+        $("#staffRead").innerHTML = `<b>How to read it.</b> The sentence lowers the overall predicted risk in ${down} of ${ms.length} models, and it shrinks the weekend gap significantly (uncorrected p &lt; .05) in ${narrowed}. So part of the weekend effect is the model’s guess about weekend staffing; the rest stays.`;
+      }
+      // 5. explorer (synthetic patients)
+      const X = K.explorer, cm = $("#cxModel"), cc = $("#cxCase");
+      M.forEach(m => cm.add(new Option(m.label, m.repo))); cm.value = "Qwen/Qwen2.5-3B-Instruct";
+      X.cases.forEach((id, i) => { const c = C.cases[caseIdx[id]]; cc.add(new Option(`${c.age}-year-old ${c.sex === "female" ? "woman" : "man"} · ${c.condition.replace(/_/g, " ")} (${c.severity})`, i)); });
+      const xs = { cell: null };
+      function sentence(c, ctry, d, s) {
+        const base = d === "none" ? `${c.pron} is admitted to a hospital in ${PLACE[ctry]}, in the morning.` : `${c.pron} is admitted to a hospital in ${PLACE[ctry]}, on a ${d} morning.`;
+        return base + (s ? " Staffing and services at this hospital are the same on every day of the week." : "");
+      }
+      function drawCx() {
+        const a = X.answers[cm.value] && X.answers[cm.value][+cc.value];
+        const tb = $("#cxTable"); tb.innerHTML = "";
+        if (!a) { tb.innerHTML = "<tr><td>No answers for this model.</td></tr>"; return; }
+        const c = C.cases[caseIdx[X.cases[+cc.value]]];
+        const head = H("tr"); head.appendChild(H("th", {}, "Hospital"));
+        SHORT.forEach(s => head.appendChild(H("th", { class: "r" }, s)));
+        tb.appendChild(head);
+        const rowsDef = CT.map(ct => [ct, 0]).concat([["USA", 1]]);
+        rowsDef.forEach(([ct, s]) => {
+          const tr = H("tr"); tr.appendChild(H("th", { scope: "row" }, s ? "Boston + staffing" : CITY[ct]));
+          DD.forEach(d => {
+            const k = X.order.findIndex(o => o[0] === ct && o[1] === d && o[2] === s), v = a[k];
+            const we = d !== "none" && isWE(ct, d);
+            const td = H("td", { class: "r" + (we ? " we" : "") + (d === "none" ? " nd" : ""), style: v < 0 ? "" : `background:color-mix(in srgb, var(--hot) ${Math.round(v * 0.9)}%, var(--surface))` }, v < 0 ? "–" : v + "%");
+            td.setAttribute("tabindex", "0");
+            const pick = () => { xs.cell = [ct, d, s]; tb.querySelectorAll("td.sel").forEach(e => e.classList.remove("sel")); td.classList.add("sel"); showText(c); };
+            td.addEventListener("click", pick); td.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+            tr.appendChild(td);
+          });
+          tb.appendChild(tr);
+        });
+        if (!xs.cell) xs.cell = ["Iran", "Saturday", 0];
+        showText(c);
+      }
+      function showText(c) {
+        const [ct, d, s] = xs.cell;
+        $("#cxText").innerHTML = `${c.text} <mark>${sentence(c, ct, d, s)}</mark>`;
+      }
+      cm.addEventListener("change", drawCx); cc.addEventListener("change", () => { xs.cell = null; drawCx(); });
+      $("#cxFind").addEventListener("click", () => {
+        const A = X.answers[cm.value]; if (!A) return;
+        const ki = X.order.findIndex(o => o[0] === "Iran" && o[1] === "none" && o[2] === 0), kb = X.order.findIndex(o => o[0] === "USA" && o[1] === "none" && o[2] === 0);
+        const cand = A.map((r, i) => [i, Math.abs(r[ki] - r[kb])]).filter(p => p[1] >= 5).map(p => p[0]);
+        if (!cand.length) { $("#cxText").textContent = "For this model no synthetic patient changes by 5 points or more between Boston and Tehran."; return; }
+        cc.value = cand[Math.floor(Math.random() * cand.length)]; xs.cell = ["Iran", "none", 0]; drawCx();
+      });
+      // dataset switch for the four charts
+      st.ds = seg($("#cDs"), v => { st.ds = v; drawCity(); drawWhere(); drawProf(); drawStaff(); });
+      drawCity(); drawWhere(); drawProf(); drawStaff(); drawCx();
+    }).catch(err => { const s = $("#country .wrap"); if (s) s.insertAdjacentHTML("beforeend", '<p class="loading">The country results could not be loaded (' + String(err).slice(0, 80) + ').</p>'); });
 
     // ---------- statistics tables
     const tb = R.tests.base, tr = R.tests_real.base, nm = repo.length;
