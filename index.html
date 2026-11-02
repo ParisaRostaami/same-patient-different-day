@@ -298,8 +298,8 @@ table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
     <div class="tag">POSTER · ROCKY MOUNTAIN WORKSHOP ON TRUSTWORTHY &amp; RESPONSIBLE AI · CU BOULDER · NOV 4, 2026</div>
     <h1>Same Patient, <span>Different Day.</span></h1>
     <p class="lede">We gave 13 language models the same emergency patients again and again, changing only the day of admission. If a model raises the risk of death because it is Saturday, it is applying the hospital "weekend effect" to someone it already knows everything about.</p>
-    <div class="flipbox" id="flipbox"><span>Admitted on a</span><span class="flap" id="flapDay"><span>Sunday</span></span><span>morning: predicted risk of death</span><span class="flap" id="flapRisk"><span>80%</span></span></div>
-    <p class="fl-cap">The same 71-year-old woman with a pulmonary embolism, asked to Llama-3-8B. Only the day changes.</p>
+    <div class="flipbox" id="flipbox"><span>Admitted on a</span><span class="flap" id="flapDay"><span>Sunday</span></span><span>morning: predicted risk of death</span><span class="flap" id="flapRisk"><span>90%</span></span></div>
+    <p class="fl-cap">The same 55-year-old woman with a severe COPD flare, asked to Qwen2.5-3B. Only the day changes.</p>
     <div class="who"><b>Parisa Rostami</b><span>School of Computing, Wichita State University</span><a href="#about">Contact and links</a></div>
     <div class="stats" id="heroStats"></div>
   </div>
@@ -687,7 +687,7 @@ table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
 
     // hero split-flap: the same patient through the week
     (function () {
-      const r = risks("NousResearch/Meta-Llama-3-8B-Instruct", "base", caseIdx["pe-severe-02"]);
+      const r = risks("Qwen/Qwen2.5-3B-Instruct", "base", caseIdx["copd-severe-07"]);
       const dEl = $("#flapDay"), rEl = $("#flapRisk"), box = $("#flipbox");
       let k = 6, paused = false;
       const set = () => { dEl.firstChild.textContent = DAYS[k]; rEl.firstChild.textContent = r[k] + "%"; [dEl, rEl].forEach(e => e.classList.toggle("we", k >= 5)); };
@@ -726,7 +726,7 @@ table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
     // ---------- demo
     const dSel = $("#demoModel");
     M.forEach(m => dSel.add(new Option(m.label + (m.kind === "medical" ? " (medical)" : ""), m.repo)));
-    let demo = { m: "NousResearch/Meta-Llama-3-8B-Instruct", i: caseIdx["pe-severe-02"], v: 6 };
+    let demo = { m: "Qwen/Qwen2.5-3B-Instruct", i: caseIdx["copd-severe-07"], v: 5 };
     dSel.value = demo.m;
     const flipsFor = m => C.cases.map((c, i) => i).filter(i => rangeOf(risks(m, "base", i)) >= 10);
     function drawDemo(animate) {
@@ -774,7 +774,7 @@ table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
     conds.forEach(k => $("#exCond").add(new Option(R.meta.conditions[k], k)));
     for (let n = 0; n < 10; n++) $("#exNum").add(new Option("Patient " + (n + 1), String(n).padStart(2, "0")));
     M.forEach(m => $("#exModel").add(new Option(m.label + (m.kind === "medical" ? " (medical)" : ""), m.repo)));
-    const ex = { cond: "pe", sev: "severe", num: "02", m: "NousResearch/Meta-Llama-3-8B-Instruct", p: "base", v: 6 };
+    const ex = { cond: "copd", sev: "severe", num: "07", m: "Qwen/Qwen2.5-3B-Instruct", p: "base", v: 5 };
     $("#exCond").value = ex.cond; $("#exSev").value = ex.sev; $("#exNum").value = ex.num; $("#exModel").value = ex.m;
     const tabs = $("#exTabs");
     C.variants.forEach((v, k) => {
