@@ -575,7 +575,7 @@ table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
 
 <footer>
   <div class="wrap">
-    <p>Parisa Rostami · M.S. Computer Science, School of Computing, Wichita State University · Advisor: Cody Farlow · Results as of <span id="updated">Oct 31, 2026</span>. MIMIC-III, MIMIC-IV and eICU-CRD were used under PhysioNet credentialed access; no patient-level data is shown or leaves the WSU cluster. References: Bell &amp; Redelmeier, N Engl J Med 2001; Pauls et al., J Hosp Med 2017; Walker et al., Lancet 2017; Meacock et al., J Health Serv Res Policy 2017; Johnson et al., Sci Data 2016 and 2023; Pollard et al., Sci Data 2018.</p>
+    <p>Parisa Rostami · M.S. Computer Science, School of Computing, Wichita State University · Advisor: Cody Farlow · Results as of <span id="updated">Oct 31, 2026</span>. MIMIC-III, MIMIC-IV and eICU-CRD were used under PhysioNet credentialed access; no patient-level data is shown or leaves the WSU cluster. References: Bell &amp; Redelmeier, N Engl J Med 2001; Pauls et al., J Hosp Med 2017; Walker et al., Lancet 2017; Meacock et al., J Health Serv Res Policy 2017; Johnson et al., Sci Data 2016 and 2023; Pollard et al., Sci Data 2018; Vincent et al., Lancet Respir Med 2014 (ICON audit); Kruk et al., Lancet 2018; GBD 2016 Healthcare Access and Quality Collaborators, Lancet 2018.</p>
   </div>
 </footer>
 
@@ -1242,7 +1242,7 @@ table.cx td.sel { box-shadow: inset 0 0 0 3px var(--accent2); }
         const cnt = c => [ms.filter(m => T0[m][key(c)][0] > 0).length, ms.filter(m => sig(T0[m][key(c)])).length];
         const med = c => { const a = ms.map(m => T0[m][key(c)][0]).sort((p, q) => p - q); return a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2; };
         const [ti, ts] = cnt("Iran"), [ri, rs] = cnt("Saudi Arabia"), [ai, as] = cnt("Israel");
-        $("#cityRead").innerHTML = `<b>How to read it.</b> Right of the dashed line = higher risk than the same patient in Boston. Tehran: higher in ${ti} of ${ms.length} models (${ts} significant), median ${sgn(med("Iran"), 1)}. Riyadh: ${ri} higher (${rs} significant), median ${sgn(med("Saudi Arabia"), 1)}. Tel Aviv: ${ai} higher (${as} significant), median ${sgn(med("Israel"), 1)}. The case text, vital signs and labs are identical.`;
+        $("#cityRead").innerHTML = `<b>How to read it.</b> Right of the dashed line = higher risk than the same patient in Boston. Tehran: higher in ${ti} of ${ms.length} models (${ts} significant), median ${sgn(med("Iran"), 1)}. Riyadh: ${ri} higher (${rs} significant), median ${sgn(med("Saudi Arabia"), 1)}. Tel Aviv: ${ai} higher (${as} significant), median ${sgn(med("Israel"), 1)}. The case text, vital signs and labs are identical. <b>Caveat:</b> real hospital outcomes do differ by country and health-system quality (ICON audit, Vincent et al. 2014; Kruk et al. 2018; GBD Healthcare Access and Quality Index 2018), so part of this effect may be real. We treat the city effect as an unstated assumption, not proof of bias.`;
       }
       // 2. where is the weekend
       function drawWhere() {
